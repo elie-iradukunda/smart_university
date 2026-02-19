@@ -16,7 +16,7 @@ exports.getAllResources = async (req, res) => {
 
 exports.uploadResource = async (req, res) => {
   try {
-    const { title, type, url, category, duration, size, thumbnail } = req.body; // Matched with AddResourceModal inputs
+    const { title, type, url, category, duration, size, thumbnail, isEssential } = req.body; 
     
     const resource = await Resource.create({
       title,
@@ -25,7 +25,8 @@ exports.uploadResource = async (req, res) => {
       category,
       duration,
       size,
-      thumbnail
+      thumbnail,
+      isEssential
     });
     
     res.status(201).json(resource);

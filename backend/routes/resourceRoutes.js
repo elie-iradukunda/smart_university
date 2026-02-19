@@ -4,6 +4,6 @@ const resourceController = require('../controllers/resourceController');
 const { auth, authorize } = require('../middleware/authMiddleware');
 
 router.get('/', auth, resourceController.getAllResources);
-router.post('/', auth, authorize(['Admin', 'HOD', 'StockManager']), resourceController.uploadResource);
+router.post('/', auth, authorize(['Admin', 'HOD', 'Lecturer']), resourceController.uploadResource);
 
 module.exports = router;

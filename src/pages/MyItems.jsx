@@ -1,15 +1,18 @@
 import { RefreshCcw, CheckCircle, AlertCircle, Clock, ShoppingBag, Loader2, Package } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import API_BASE_URL from '../config/api';
+import EquipmentDetailsModal from '../components/EquipmentDetailsModal';
 
 const MyItems = () => {
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [selectedItem, setSelectedItem] = useState(null);
 
     const fetchData = async () => {
         try {
             const token = localStorage.getItem('token');
-            const resResponse = await fetch('http://localhost:5000/api/reservations/my', {
+            const resResponse = await fetch(`${API_BASE_URL}/api/reservations/my`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -130,7 +133,10 @@ const MyItems = () => {
                                 </div>
 
                                 <div className="flex gap-2">
-                                    <button className="flex-1 bg-gray-50 border border-gray-200 text-[#2c3e50] py-2 rounded-md text-xs font-bold hover:bg-gray-100 transition-colors">
+                                    <button 
+                                        onClick={() => setSelectedItem(item.Equipment)}
+                                        className="flex-1 bg-gray-50 border border-gray-200 text-[#2c3e50] py-2 rounded-md text-xs font-bold hover:bg-gray-100 transition-colors"
+                                    >
                                         Details
                                     </button>
                                     {item.status === 'Pending' && (
@@ -193,6 +199,13 @@ const MyItems = () => {
                     </table>
                 </div>
             </div>
+
+            <EquipmentDetailsModal 
+               isOpen={!!selectedItem}
+               onClose={() => setSelectedItem(null)}
+               equipment={selectedItem}
+               readOnly={true}
+            />
         </div>
     );
 };

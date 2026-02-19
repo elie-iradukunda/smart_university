@@ -1,5 +1,6 @@
 import { Search, Calendar, ArrowRight, ShieldCheck, Filter, ChevronDown, Package, Loader2, Info } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import API_BASE_URL from '../config/api';
 import EquipmentDetailsModal from '../components/EquipmentDetailsModal';
 
 const BorrowEquipment = () => {
@@ -8,12 +9,13 @@ const BorrowEquipment = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
 
   useEffect(() => {
     const fetchEquipment = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/equipment', {
+        const response = await fetch(`${API_BASE_URL}/api/equipment`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -35,10 +37,14 @@ const BorrowEquipment = () => {
     fetchEquipment();
   }, []);
 
-  const filteredItems = items.filter(item =>
-    item.name.toLowerCase().includes(search.toLowerCase()) || 
-    item.category.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredItems = items.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
+                         item.category.toLowerCase().includes(search.toLowerCase());
+    const matchesDept = selectedDepartment === "All Departments" || item.department === selectedDepartment;
+    return matchesSearch && matchesDept;
+  });
+
+  const departments = ["All Departments", ...new Set(items.map(item => item.department).filter(Boolean))];
 
   if (loading) return (
      <div className="flex h-96 items-center justify-center">
@@ -80,8 +86,22 @@ const BorrowEquipment = () => {
          </div>
          
          <div className="flex gap-2 w-full md:w-auto overflow-x-auto">
+            <div className="relative shrink-0">
+               <select 
+                  value={selectedDepartment}
+                  onChange={(e) => setSelectedDepartment(e.target.value)}
+                  className="appearance-none pl-8 pr-10 py-2 bg-white border border-gray-200 text-[#2c3e50] rounded-md text-xs font-medium focus:outline-none focus:border-[#1f4fa3] cursor-pointer hover:bg-gray-50 transition-colors"
+               >
+                  {departments.map(dept => (
+                     <option key={dept} value={dept}>{dept}</option>
+                  ))}
+               </select>
+               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+            </div>
+
             <button className="whitespace-nowrap px-3 py-1.5 bg-gray-100 text-[#6b7280] rounded-md text-xs font-medium hover:bg-gray-200 transition-colors flex items-center gap-1">
-               <Filter size={14} /> Categories <ChevronDown size={12} />
+               <Package size={14} /> Categories <ChevronDown size={12} />
             </button>
             <button className="whitespace-nowrap px-3 py-1.5 bg-white border border-gray-200 text-[#2c3e50] rounded-md text-xs font-medium hover:bg-gray-50 transition-colors">
                Available Only

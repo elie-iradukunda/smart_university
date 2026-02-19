@@ -1,6 +1,7 @@
 import { X, Camera, Info, Save, ChevronDown, Plus, Trash2, Youtube, Image as ImageIcon, FileText, Settings, ShieldCheck, Database, MapPin, DollarSign, Activity, AlertCircle, CheckCircle2, Upload, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import API_BASE_URL from '../config/api';
 
 const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,13 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
   };
 
   const [formData, setFormData] = useState(initialFormState);
-  const [uploading, setUploading] = useState(null); // Track which field is uploading
+  const [uploading, setUploading] = useState(null); 
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) setUser(JSON.parse(userData));
+  }, []);
 
   // Helper to parse JSON strings to arrays if needed
   const tryParseArray = (value) => {
@@ -33,7 +40,6 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
 
   useEffect(() => {
     if (editData && isOpen) {
-       // Populate form with existing data
        setFormData({
           ...initialFormState,
           ...editData,
@@ -41,10 +47,13 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
           galleryImages: tryParseArray(editData.galleryImages)
        });
     } else if (!editData && isOpen) {
-       // Reset for new item
-       setFormData(initialFormState);
+       // Reset for new item, default to user department
+       setFormData({
+           ...initialFormState,
+           department: user?.role !== 'Admin' ? (user?.department || initialFormState.department) : initialFormState.department
+       });
     }
-  }, [editData, isOpen]);
+  }, [editData, isOpen, user]);
 
   if (!isOpen) return null;
 
@@ -92,7 +101,7 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
 
       try {
           const token = localStorage.getItem('token');
-          const response = await fetch('http://localhost:5000/api/upload', {
+          const response = await fetch(`${API_BASE_URL}/api/upload`, {
               method: 'POST',
               headers: {
                   'Authorization': `Bearer ${token}`
@@ -128,8 +137,8 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
         };
 
         const url = editData 
-            ? `http://localhost:5000/api/equipment/${editData.id}` 
-            : 'http://localhost:5000/api/equipment';
+            ? `${API_BASE_URL}/api/equipment/${editData.id}` 
+            : `${API_BASE_URL}/api/equipment`;
         
         const method = editData ? 'PUT' : 'POST';
 
@@ -214,19 +223,28 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
                         <InputGroup label="Equipment Name" name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Solar PV Training System" required />
                         <InputGroup label="Model Number" name="modelNumber" value={formData.modelNumber} onChange={handleChange} placeholder="SUN-TRAIN-01" />
                         
-                        <SelectGroup label="Category" name="category" value={formData.category} onChange={handleChange}>
-                           <option>Renewable Energy</option>
-                           <option>Mechatronic</option>
-                           <option>ICT</option>
-                           <option>Electronic & Telecomm</option>
-                           <option>Photography</option>
-                        </SelectGroup>
+                        <InputGroup 
+                           label="Category" 
+                           name="category" 
+                           value={formData.category} 
+                           onChange={handleChange} 
+                           placeholder="e.g. Robotics, Automation, Lab Kits..." 
+                           required 
+                        />
                         
-                        <SelectGroup label="Department" name="department" value={formData.department} onChange={handleChange}>
+                        <SelectGroup 
+                           label="Department" 
+                           name="department" 
+                           value={formData.department} 
+                           onChange={handleChange}
+                           disabled={user?.role !== 'Admin'}
+                        >
                            <option>Mechanical Engineering</option>
                            <option>ICT Division</option>
                            <option>Energy Systems</option>
                            <option>Media Arts</option>
+                           <option>Mechatronic</option>
+                           <option>Automation</option>
                         </SelectGroup>
 
                         <InputGroup label="Serial Number" name="serialNumber" value={formData.serialNumber} onChange={handleChange} placeholder="SN-10293845" />
@@ -468,7 +486,7 @@ const InputGroup = ({ label, placeholder, type = "text", name, value, onChange, 
   );
 };
 
-const SelectGroup = ({ label, children, name, value, onChange }) => (
+const SelectGroup = ({ label, children, name, value, onChange, disabled }) => (
   <div className="space-y-1.5 flex-1">
      <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">{label}</label>
      <div className="relative">
@@ -476,11 +494,12 @@ const SelectGroup = ({ label, children, name, value, onChange }) => (
            name={name}
            value={value}
            onChange={onChange}
-           className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl text-[13px] text-[#2c3e50] appearance-none focus:bg-white focus:border-[#1f4fa3] transition-all cursor-pointer outline-none"
+           disabled={disabled}
+           className={`w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl text-[13px] text-[#2c3e50] appearance-none focus:bg-white focus:border-[#1f4fa3] transition-all cursor-pointer outline-none ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
            {children}
         </select>
-        <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        {!disabled && <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />}
      </div>
   </div>
 );

@@ -1,10 +1,22 @@
 import { X, Upload, Video, FileText, Link, Check, ChevronDown, Save, Loader2, BookOpen, Globe, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import API_BASE_URL from '../config/api';
 
 const AddResourceModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(null);
+  const [formData, setFormData] = useState({
+     type: 'Video',
+     title: '',
+     url: '',
+     category: 'Lab Equipment',
+     department: 'All Departments',
+     thumbnail: '',
+     duration: '',
+     size: '',
+     isEssential: false
+  });
 
   const handleFileUpload = async (e, field) => {
       const file = e.target.files[0];
@@ -16,7 +28,7 @@ const AddResourceModal = ({ isOpen, onClose }) => {
 
       try {
           const token = localStorage.getItem('token');
-          const response = await fetch('http://localhost:5000/api/upload', {
+          const response = await fetch(`${API_BASE_URL}/api/upload`, {
               method: 'POST',
               headers: {
                   'Authorization': `Bearer ${token}`
@@ -40,7 +52,7 @@ const AddResourceModal = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/resources', {
+      const response = await fetch(`${API_BASE_URL}/api/resources`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -175,6 +187,22 @@ const AddResourceModal = ({ isOpen, onClose }) => {
                             value={formData.type === 'Video' ? formData.duration : formData.size}
                             onChange={(val) => setFormData({...formData, [formData.type === 'Video' ? 'duration' : 'size']: val})}
                         />
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-50 flex items-center justify-between bg-blue-50/30 p-4 rounded-xl border border-blue-100/50">
+                        <div>
+                            <p className="text-xs font-bold text-[#1f4fa3] uppercase tracking-wider">Essential Guide</p>
+                            <p className="text-[10px] text-gray-500">Pin this to the "Essential Guides" sidebar for quick access.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                className="sr-only peer" 
+                                checked={formData.isEssential}
+                                onChange={(e) => setFormData({...formData, isEssential: e.target.checked})}
+                            />
+                            <div className="w-10 h-5.5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1f4fa3]"></div>
+                        </label>
                     </div>
                 </div>
             </div>

@@ -54,10 +54,10 @@ const MainLayout = () => {
   // Define menu items visibility based on roles
   const allMenuItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['All'] },
-    { to: '/equipment', icon: Package, label: 'Equipment', roles: ['Admin', 'HOD', 'StockManager', 'Appointed Staff'] },
+    { to: '/equipment', icon: Package, label: 'Equipment', roles: ['Admin', 'HOD', 'StockManager', 'Appointed Staff', 'Lab Staff'] },
     { to: '/borrow', icon: HandHelping, label: 'Borrow Equipment', roles: ['Student', 'Lecturer', 'Admin', 'Staff'] },
     { to: '/my-items', icon: ShoppingBag, label: 'My Items', roles: ['All'] },
-    { to: '/reservations', icon: CalendarCheck, label: 'Reservations', roles: ['Admin', 'HOD', 'StockManager'] },
+    { to: '/reservations', icon: CalendarCheck, label: 'Reservations', roles: ['Admin', 'HOD', 'StockManager', 'Lab Staff'] },
     { to: '/learning', icon: GraduationCap, label: 'Learning Center', roles: ['All'] },
     { to: '/reports', icon: BarChart3, label: 'Reports', roles: ['Admin', 'HOD'] },
     { to: '/users', icon: Users, label: 'Users', roles: ['Admin', 'HOD'] },

@@ -2,17 +2,26 @@ import {
   Calendar, CheckCircle, AlertCircle, Trash2, Check, X, Loader2, User, Package
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import API_BASE_URL from '../config/api';
+import EquipmentDetailsModal from "../components/EquipmentDetailsModal";
 
 const Reservations = () => {
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [actionLoading, setActionLoading] = useState(null);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) setUser(JSON.parse(userData));
+    }, []);
 
     const fetchReservations = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/reservations/all', {
+            const response = await fetch(`${API_BASE_URL}/api/reservations/all`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error("Failed to fetch reservations");
@@ -33,7 +42,7 @@ const Reservations = () => {
         setActionLoading(id);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/reservations/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/reservations/${id}`, {
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -82,7 +91,9 @@ const Reservations = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-semibold text-[#2c3e50]">Manage Reservations</h1>
-                    <p className="text-sm text-[#6b7280] mt-1">Review and approve equipment usage requests.</p>
+                    <p className="text-sm text-[#6b7280] mt-1">
+                        {user?.role === 'Admin' ? 'Global review' : `Reviewing requests for ${user?.department || 'all departments'}`}
+                    </p>
                 </div>
             </div>
 
@@ -129,21 +140,47 @@ const Reservations = () => {
                                             </span>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4 pt-2">
-                                            <div className="flex items-center gap-2 text-xs text-[#6b7280]">
-                                                <User size={14} className="text-[#9ca3af]" />
-                                                <span>
-                                                    <span className="font-semibold text-[#2c3e50]">{item.User?.name}</span>
-                                                    <span className="text-[10px] ml-1 opacity-60">({item.User?.studentId})</span>
-                                                </span>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center gap-2 text-xs text-[#6b7280]">
+                                                    <User size={14} className="text-[#9ca3af]" />
+                                                    <span className="font-semibold text-[#2c3e50]">{item.User?.fullName}</span>
+                                                    <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-[#9ca3af]">
+                                                        {item.User?.studentId}
+                                                    </span>
+                                                </div>
+                                                <div className="flex gap-2 text-[10px] text-[#9ca3af] font-medium pl-6">
+                                                    <span>{item.User?.role}</span>
+                                                    <span>•</span>
+                                                    <span>{item.User?.department}</span>
+                                                    <span>•</span>
+                                                    <span className="text-[#1f4fa3] opacity-70">{item.User?.email}</span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2 text-xs text-[#6b7280]">
-                                                <Calendar size={14} className="text-[#9ca3af]" />
-                                                <span>{new Date(item.startDate).toLocaleDateString()} - {new Date(item.endDate).toLocaleDateString()}</span>
+                                            <div className="flex items-start gap-2 text-xs text-[#6b7280]">
+                                                <Calendar size={14} className="text-[#9ca3af] mt-0.5" />
+                                                <div className="flex flex-col">
+                                                    <span>{new Date(item.startDate).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] opacity-60">to {new Date(item.endDate).toLocaleDateString()}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="bg-gray-50 p-2 rounded text-[11px] text-[#6b7280] italic">
-                                            "{item.purpose}"
+                                            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                                                <div className="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Module Context</span>
+                                                    <span className="text-xs font-bold text-[#1f4fa3]">{item.moduleCode || 'N/A'}</span>
+                                                </div>
+                                                <div className="text-[11px] text-[#6b7280] leading-relaxed">
+                                                    <span className="font-semibold text-[#2c3e50] block mb-0.5 text-[9px] uppercase opacity-50">Purpose / Goals</span>
+                                                    "{item.purpose}"
+                                                </div>
+                                            </div>
+                                            
+                                            <button 
+                                                onClick={() => setSelectedItem(item.Equipment)}
+                                                className="flex items-center gap-2 text-[10px] font-bold text-[#1f4fa3] hover:underline"
+                                            >
+                                                <Package size={12} /> View Full Specifications & Media
+                                            </button>
                                         </div>
                                     </div>
 
@@ -190,6 +227,13 @@ const Reservations = () => {
                     </div>
                 )}
             </div>
+
+            <EquipmentDetailsModal 
+               isOpen={!!selectedItem}
+               onClose={() => setSelectedItem(null)}
+               equipment={selectedItem}
+               readOnly={true}
+            />
         </div>
     );
 };

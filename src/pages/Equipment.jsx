@@ -1,5 +1,6 @@
 import { Search, Plus, Filter, MoreHorizontal, FileText, ChevronDown, Loader2, Package, Edit } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import API_BASE_URL from '../config/api';
 import AddEquipmentModal from '../components/AddEquipmentModal';
 
 import EquipmentDetailsModal from '../components/EquipmentDetailsModal';
@@ -12,11 +13,18 @@ const Equipment = () => {
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
+  const [user, setUser] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) setUser(JSON.parse(userData));
+  }, []);
 
   const fetchEquipment = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/equipment', {
+      const response = await fetch(`${API_BASE_URL}/api/equipment`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -45,11 +53,18 @@ const Equipment = () => {
       fetchEquipment(); // Refresh list after adding
   };
 
-  const filteredItems = items.filter(item =>
-      item.name.toLowerCase().includes(search.toLowerCase()) || 
-      item.category.toLowerCase().includes(search.toLowerCase()) ||
-      (item.modelNumber && item.modelNumber.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredItems = items.filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
+                           item.category.toLowerCase().includes(search.toLowerCase()) ||
+                           (item.modelNumber && item.modelNumber.toLowerCase().includes(search.toLowerCase()));
+      
+      const matchesDept = user?.role === 'Admin' || item.department === user?.department;
+      const matchesCategory = selectedCategory === "All Categories" || item.category === selectedCategory;
+      
+      return matchesSearch && matchesDept && matchesCategory;
+  });
+
+  const categories = ["All Categories", ...new Set(items.map(item => item.category).filter(Boolean))];
 
   if (loading) return (
      <div className="flex h-96 items-center justify-center">
@@ -70,7 +85,9 @@ const Equipment = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-[#2c3e50]">Equipment Inventory</h1>
-          <p className="text-sm text-[#6b7280] mt-1">Manage and track all institutional assets.</p>
+          <p className="text-sm text-[#6b7280] mt-1">
+             {user?.role === 'Admin' ? 'Manage and track all institutional assets.' : `Managing inventory for ${user?.department || 'your department'}.`}
+          </p>
         </div>
         <div className="flex gap-3">
            <button className="bg-white border border-gray-200 text-[#6b7280] px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2 shadow-sm transition-all">
@@ -98,6 +115,7 @@ const Equipment = () => {
          isOpen={!!selectedItem}
          onClose={() => setSelectedItem(null)}
          equipment={selectedItem}
+         readOnly={true}
       />
 
       {/* Filters & Search */}
@@ -115,24 +133,29 @@ const Equipment = () => {
          
          <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative group">
-               <select className="appearance-none bg-white border border-gray-200 text-[#6b7280] py-2 pl-4 pr-10 rounded-md text-sm font-medium focus:outline-none focus:border-[#1f4fa3] cursor-pointer hover:bg-gray-50">
-                  <option>All Categories</option>
-                  <option>Computing</option>
-                  <option>Photography</option>
-                  <option>Lab Equipment</option>
+               <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="appearance-none bg-white border border-gray-200 text-[#6b7280] py-2 pl-4 pr-10 rounded-md text-sm font-medium focus:outline-none focus:border-[#1f4fa3] cursor-pointer hover:bg-gray-50"
+               >
+                  {categories.map(cat => (
+                     <option key={cat} value={cat}>{cat}</option>
+                  ))}
                </select>
                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
             </div>
             
-            <div className="relative group">
-               <select className="appearance-none bg-white border border-gray-200 text-[#6b7280] py-2 pl-4 pr-10 rounded-md text-sm font-medium focus:outline-none focus:border-[#1f4fa3] cursor-pointer hover:bg-gray-50">
-                  <option>Status: All</option>
-                  <option>Available</option>
-                  <option>In Use</option>
-                  <option>Maintenance</option>
-               </select>
-               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
-            </div>
+            {user?.role === 'Admin' && (
+                <div className="relative group">
+                    <select className="appearance-none bg-white border border-gray-200 text-[#6b7280] py-2 pl-4 pr-10 rounded-md text-sm font-medium focus:outline-none focus:border-[#1f4fa3] cursor-pointer hover:bg-gray-50">
+                        <option>Status: All</option>
+                        <option>Available</option>
+                        <option>In Use</option>
+                        <option>Maintenance</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                </div>
+            )}
          </div>
       </div>
 

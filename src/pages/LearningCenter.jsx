@@ -1,6 +1,8 @@
 import { Video, FileText, Search, BookOpen, Download, Clock, ArrowRight, Upload, Loader2, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import API_BASE_URL from '../config/api';
 import AddResourceModal from '../components/AddResourceModal';
+import ResourceDetailsModal from '../components/ResourceDetailsModal';
 
 const LearningCenter = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -8,11 +10,18 @@ const LearningCenter = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [selectedResource, setSelectedResource] = useState(null);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) setUser(JSON.parse(userData));
+  }, []);
 
   const fetchResources = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/resources', {
+      const response = await fetch(`${API_BASE_URL}/api/resources`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -37,6 +46,8 @@ const LearningCenter = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const essentialGuides = resources.filter(r => r.isEssential);
+
   if (loading) return (
      <div className="flex h-96 items-center justify-center">
         <Loader2 className="animate-spin text-[#1f4fa3]" size={32} />
@@ -52,12 +63,14 @@ const LearningCenter = () => {
           <h1 className="text-2xl font-semibold text-[#2c3e50]">Learning Center</h1>
           <p className="text-sm text-[#6b7280] mt-1">Institutional resource library and training materials.</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-[#1f4fa3] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#173e82] flex items-center gap-2 shadow-sm transition-all"
-        >
-          <Upload size={16} /> Upload Resource
-        </button>
+        {(user?.role === 'Admin' || user?.role === 'HOD' || user?.role === 'Lecturer') && (
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-[#1f4fa3] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#173e82] flex items-center gap-2 shadow-sm transition-all"
+            >
+              <Upload size={16} /> Upload Resource
+            </button>
+        )}
       </div>
 
       <AddResourceModal 
@@ -66,6 +79,12 @@ const LearningCenter = () => {
              setIsModalOpen(false);
              fetchResources();
          }} 
+      />
+
+      <ResourceDetailsModal 
+         isOpen={!!selectedResource}
+         onClose={() => setSelectedResource(null)}
+         resource={selectedResource}
       />
 
       {/* Search & Categories */}
@@ -107,7 +126,11 @@ const LearningCenter = () => {
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredResources.length > 0 ? (
                  filteredResources.map(res => (
-                    <ResourceCard key={res.id} res={res} />
+                    <ResourceCard 
+                      key={res.id} 
+                      res={res} 
+                      onClick={() => setSelectedResource(res)} 
+                    />
                  ))
               ) : (
                  <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-100 rounded-xl">
@@ -129,13 +152,31 @@ const LearningCenter = () => {
               <p className="text-xs text-gray-400 font-medium uppercase tracking-widest">Total Resources</p>
            </div>
 
-           {/* Quick Downloads */}
+           {/* Essential Guides - Dynamic */}
            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
-              <h3 className="text-xs font-bold text-[#2c3e50] uppercase tracking-widest">Essential Guides</h3>
-              <div className="space-y-2">
-                 <DownloadItem title="Lab Safety Protocol 2024" size="1.2 MB" />
-                 <DownloadItem title="Equipment Request Form" size="0.5 MB" />
-                 <DownloadItem title="Lab Access Schedule" size="0.8 MB" />
+              <div className="flex items-center justify-between">
+                 <h3 className="text-xs font-bold text-[#2c3e50] uppercase tracking-widest">Essential Guides</h3>
+                 {essentialGuides.length > 0 && (
+                    <span className="text-[10px] bg-[#1f4fa3]/10 text-[#1f4fa3] font-bold px-2 py-0.5 rounded-full">{essentialGuides.length}</span>
+                 )}
+              </div>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                 {essentialGuides.length > 0 ? (
+                    essentialGuides.map(res => (
+                       <DownloadItem
+                           key={res.id}
+                           title={res.title}
+                           size={res.size || res.type}
+                           onClick={() => setSelectedResource(res)}
+                       />
+                    ))
+                 ) : (
+                    <div className="py-6 text-center border border-dashed border-gray-100 rounded-lg">
+                       <BookOpen size={24} className="mx-auto text-gray-200 mb-2" />
+                       <p className="text-[11px] text-gray-400">No essential guides pinned yet.</p>
+                       <p className="text-[10px] text-gray-300 mt-1">Upload a resource & toggle "Essential Guide".</p>
+                    </div>
+                 )}
               </div>
               <button className="w-full py-2.5 text-[#1f4fa3] text-xs font-bold hover:bg-blue-50 rounded-md border border-transparent hover:border-blue-100 transition-all flex items-center justify-center gap-2">
                  View Internal Wiki <ArrowRight size={14} />
@@ -161,11 +202,14 @@ const LearningCenter = () => {
   );
 };
 
-const ResourceCard = ({ res }) => {
+const ResourceCard = ({ res, onClick }) => {
   const Icon = res.type === 'Video' ? Video : res.type === 'PDF' ? FileText : LinkIcon;
   
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-all group cursor-pointer flex flex-col h-full border-b-2 hover:border-b-[#1f4fa3]">
+    <div 
+      onClick={onClick}
+      className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-all group cursor-pointer flex flex-col h-full border-b-2 hover:border-b-[#1f4fa3]"
+    >
        <div className="h-40 bg-gray-50 relative overflow-hidden flex items-center justify-center">
           {res.thumbnail ? (
              <img src={res.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -202,14 +246,17 @@ const ResourceCard = ({ res }) => {
   );
 };
 
-const DownloadItem = ({ title, size }) => (
-  <div className="flex items-center justify-between p-2.5 hover:bg-gray-50 rounded-lg transition-all cursor-pointer group border border-transparent hover:border-gray-100">
+const DownloadItem = ({ title, size, onClick }) => (
+  <div 
+    onClick={onClick}
+    className="flex items-center justify-between p-2.5 hover:bg-gray-50 rounded-lg transition-all cursor-pointer group border border-transparent hover:border-gray-100"
+  >
      <div className="flex items-center gap-3">
         <div className="w-9 h-9 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-[#1f4fa3] group-hover:text-white transition-all shadow-sm">
            <Download size={16} />
         </div>
-        <div>
-           <p className="text-xs font-bold text-[#2c3e50]">{title}</p>
+        <div className="flex-1 min-w-0">
+           <p className="text-xs font-bold text-[#2c3e50] truncate">{title}</p>
            <p className="text-[10px] text-[#9ca3af] font-medium">{size}</p>
         </div>
      </div>

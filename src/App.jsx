@@ -69,7 +69,7 @@ function App() {
                
                {/* Equipment Management: Only for staff/admins managing inventory */}
                <Route path="equipment" element={
-                   <ProtectedRoute allowedRoles={['Admin', 'HOD', 'StockManager', 'Appointed Staff']}>
+                   <ProtectedRoute allowedRoles={['Admin', 'HOD', 'StockManager', 'Appointed Staff', 'Lab Staff']}>
                        <Equipment />
                    </ProtectedRoute>
                } />
@@ -83,7 +83,7 @@ function App() {
                
                {/* Reservations: Managing incoming requests */}
                <Route path="reservations" element={
-                   <ProtectedRoute allowedRoles={['Admin', 'HOD', 'StockManager']}>
+                   <ProtectedRoute allowedRoles={['Admin', 'HOD', 'StockManager', 'Lab Staff']}>
                        <Reservations />
                    </ProtectedRoute>
                } />

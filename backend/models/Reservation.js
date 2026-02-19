@@ -41,6 +41,10 @@ const Reservation = sequelize.define('Reservation', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  moduleCode: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   approvedBy: {
     type: DataTypes.UUID,
     allowNull: true,

@@ -36,6 +36,10 @@ const Resource = sequelize.define('Resource', {
   duration: DataTypes.STRING,
   size: DataTypes.STRING,
   thumbnail: DataTypes.STRING,
+  isEssential: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  }
 }, {
   timestamps: true,
 });

@@ -3,6 +3,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useState, useEffect } from 'react';
+import API_BASE_URL from '../config/api';
 
 const StatCard = ({ label, value, icon: Icon, color }) => (
   <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-between h-full hover:shadow-md transition-shadow">
@@ -58,7 +59,7 @@ const Dashboard = () => {
             const role = localStorage.getItem('userRole');
             setUserRole(role);
             
-            const response = await fetch('http://localhost:5000/api/dashboard/stats', {
+            const response = await fetch(`${API_BASE_URL}/api/dashboard/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();

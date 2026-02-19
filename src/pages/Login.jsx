@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, User, Briefcase, ChevronRight, Loader2, BadgeCheck, AlertCircle } from "lucide-react";
+import API_BASE_URL from '../config/api';
 import { motion } from "framer-motion";
 
 const Login = () => {
@@ -28,7 +29,7 @@ const Login = () => {
       : { fullName, email, password, role, department, studentId };
 
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

@@ -1,5 +1,6 @@
 import { User, Bell, Shield, Monitor, Save, Lock, Mail, Phone, ChevronRight, ToggleLeft, ToggleRight, Loader2, Briefcase } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import API_BASE_URL from '../config/api';
 
 const Settings = () => {
   const [user, setUser] = useState(null);
@@ -16,7 +17,7 @@ const Settings = () => {
            return;
         }
 
-        const response = await fetch('http://localhost:5000/api/auth/me', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
