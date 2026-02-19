@@ -13,7 +13,7 @@ const app = express();
 
 const path = require('path');
 
-// CORS Configuration - Allow your Vercel frontend
+// CORS Configuration
 const allowedOrigins = [
   'http://localhost:5173',  // Vite dev server
   'http://localhost:3000',
@@ -24,13 +24,20 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+    // Allow if origin matches allowed list or is a vercel.app domain
+    if (
+      allowedOrigins.some(allowed => origin.startsWith(allowed)) ||
+      origin.endsWith('.vercel.app')
+    ) {
       return callback(null, true);
     }
-    callback(new Error('Not allowed by CORS'));
+    callback(null, false);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
 
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
