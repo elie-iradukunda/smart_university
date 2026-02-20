@@ -51,6 +51,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/equipment', require('./routes/equipmentRoutes'));
 app.use('/api/reservations', require('./routes/reservationRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/resources', require('./routes/resourceRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
@@ -58,7 +59,7 @@ app.use('/api/upload', require('./routes/uploadRoutes'));
 const PORT = process.env.PORT || 5000;
 
 // Connect to Database and Sync Models
-sequelize.sync({ alter: true })
+sequelize.sync()
   .then(() => {
     console.log('Database synced');
     app.listen(PORT, '0.0.0.0', () => {

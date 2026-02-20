@@ -1,28 +1,46 @@
 const Equipment = require('../models/Equipment');
 
-// Get all equipment with filters
+// Get all equipment with filters & pagination
 exports.getAllEquipment = async (req, res) => {
   try {
-    const { category, status, department } = req.query; 
+    const { category, status, department, page = 1, limit = 8 } = req.query; 
     let whereClause = {};
+    const offset = (page - 1) * limit;
 
-    // Logic: 
-    // - Admin and Students: Can see everything (can filter by query)
-    // - Departmental Staff: Only see their department's equipment
-    const isDeptStaff = ['HOD', 'StockManager', 'Appointed Staff', 'Lab Staff'].includes(req.user.role);
+    // Access Control Logic:
+    // - Authenticated Dept Staff (HOD, StockManager, etc): Locked to their department
+    // - Authenticated Admin/Student/Public: Can see everything, can filter by query
+    const isDeptStaff = req.user && ['HOD', 'StockManager', 'Appointed Staff', 'Lab Staff'].includes(req.user.role);
     
     if (isDeptStaff && req.user.department) {
       whereClause.department = req.user.department;
-    } else {
-      // Admins/Students can use the department filter from query
-      if (department) whereClause.department = department;
+    } else if (department) {
+      // Allow filtering by shorthand or full name
+      const deptMap = {
+        'RE': 'Renewable Energy',
+        'MECH': 'Mechatronics',
+        'ICT': 'ICT',
+        'ELEC': 'Electronics'
+      };
+      whereClause.department = deptMap[department] || department;
     }
 
     if (category) whereClause.category = category;
     if (status) whereClause.status = status;
 
-    const equipment = await Equipment.findAll({ where: whereClause });
-    res.json(equipment);
+    const { count, rows } = await Equipment.findAndCountAll({ 
+      where: whereClause,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      total: count,
+      pages: Math.ceil(count / limit),
+      currentPage: parseInt(page),
+      equipment: rows
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

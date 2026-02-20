@@ -26,7 +26,7 @@ const BorrowEquipment = () => {
         }
 
         const data = await response.json();
-        setItems(data);
+        setItems(data.equipment || []);
       } catch (err) {
         setError(err.message);
       } finally {
