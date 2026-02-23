@@ -12,6 +12,8 @@ import Users from './pages/Users';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Home from './pages/Home';
+import PublicIncubation from './pages/PublicIncubation';
+import IncubationDashboard from './pages/incubation/IncubationDashboard';
 
 // Mock Auth - In a real app this would come from a Context/Store
 const getUserRole = () => {
@@ -28,7 +30,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     const normalizedAllowedRoles = allowedRoles.map(r => r.toLowerCase());
 
     if (!normalizedAllowedRoles.includes(normalizedRole)) {
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to={role === 'Incubation Manager' ? "/incubation" : "/dashboard"} replace />;
     }
     
     return children;
@@ -56,14 +58,30 @@ function App() {
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/public-incubation" element={<PublicIncubation />} />
             
             {/* Protected Dashboard Routes */}
             <Route path="/" element={<MainLayout />}>
+               {/* Role Based Views */}
+               <Route path="dashboard" element={
+                   <ProtectedRoute allowedRoles={['Student', 'Lecturer', 'Admin', 'Lab Staff', 'HOD', 'StockManager', 'Staff']}>
+                       <Dashboard />
+                   </ProtectedRoute>
+               } />
+               <Route path="learning" element={
+                   <ProtectedRoute allowedRoles={['Student', 'Lecturer', 'Admin', 'Lab Staff', 'HOD', 'StockManager', 'Staff']}>
+                       <LearningCenter />
+                   </ProtectedRoute>
+               } />
+               <Route path="my-items" element={
+                   <ProtectedRoute allowedRoles={['Student', 'Lecturer', 'Admin', 'Lab Staff', 'HOD', 'StockManager', 'Staff']}>
+                       <MyItems />
+                   </ProtectedRoute>
+               } />
+               
                {/* Accessible by All */}
-               <Route path="dashboard" element={<Dashboard />} />
-               <Route path="learning" element={<LearningCenter />} />
-               <Route path="my-items" element={<MyItems />} />
                <Route path="settings" element={<Settings />} />
+               <Route path="incubation" element={<IncubationDashboard />} />
 
                {/* Role Based Access Control */}
                

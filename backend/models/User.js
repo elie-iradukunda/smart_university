@@ -24,7 +24,7 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
   role: {
-    type: DataTypes.ENUM('Student', 'Lecturer', 'Admin', 'Lab Staff', 'HOD', 'StockManager'), // Matched with frontend select options & user roles
+    type: DataTypes.ENUM('Student', 'Lecturer', 'Admin', 'Lab Staff', 'HOD', 'StockManager', 'Incubation Manager'), // Matched with frontend select options & user roles
     allowNull: false,
   },
   department: {

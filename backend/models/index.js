@@ -2,6 +2,9 @@ const User = require('./User');
 const Equipment = require('./Equipment');
 const Reservation = require('./Reservation');
 const Resource = require('./Resource');
+const SuccessStory = require('./SuccessStory');
+const StartupProject = require('./StartupProject');
+const IncubationProgram = require('./IncubationProgram');
 
 // Relationships
 User.hasMany(Reservation, { foreignKey: 'userId' });
@@ -14,5 +17,8 @@ module.exports = {
   User,
   Equipment,
   Reservation,
-  Resource
+  Resource,
+  SuccessStory,
+  StartupProject,
+  IncubationProgram
 };

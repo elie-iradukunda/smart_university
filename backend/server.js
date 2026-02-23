@@ -55,6 +55,7 @@ app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/resources', require('./routes/resourceRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/incubation', require('./routes/incubationRoutes'));
 
 const PORT = process.env.PORT || 5000;
 

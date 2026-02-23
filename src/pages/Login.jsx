@@ -47,7 +47,11 @@ const Login = () => {
       localStorage.setItem("userRole", data.user.role); // Important for App.jsx routing
 
       // Redirect based on role (can be customized further)
-      navigate('/dashboard');
+      if (data.user.role === 'Incubation Manager') {
+         navigate('/incubation');
+      } else {
+         navigate('/dashboard');
+      }
 
     } catch (err) {
       setError(err.message);
@@ -114,6 +118,7 @@ const Login = () => {
                             <option value="HOD">HOD</option>
                             <option value="StockManager">Stock Manager</option>
                             <option value="Admin">Admin</option>
+                            <option value="Incubation Manager">Incubation Manager</option>
                          </select>
                       </div>
                       <div className="space-y-1.5">

@@ -140,6 +140,7 @@ const Home = () => {
             <a href="#how-it-works" className="hover:text-[#1f4fa3] transition-all">Shape</a>
             <a href="#inventory" className="hover:text-[#1f4fa3] transition-all">Equipment</a>
             <a href="#learning" className="hover:text-[#1f4fa3] transition-all">Learning</a>
+            <Link to="/public-incubation" className="hover:text-[#1f4fa3] transition-all">Incubation</Link>
             <a href="#about" className="hover:text-[#1f4fa3] transition-all">Campus</a>
           </div>
           <div className="flex items-center gap-6">
@@ -374,6 +375,39 @@ const Home = () => {
                         Sign In to Request <ChevronRight size={14} />
                      </Link>
                   </div>
+               </div>
+            </div>
+         </div>
+      </section>
+
+      {/* Incubation Center Spotlight */}
+      <section className="py-32 bg-slate-950 px-6 relative overflow-hidden">
+         <div className="absolute inset-0 z-0">
+           <img 
+             src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2850&q=80" 
+             className="w-full h-full object-cover opacity-20" 
+             alt="Incubation Center"
+             crossOrigin="anonymous"
+             referrerPolicy="no-referrer"
+           />
+           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/40" />
+         </div>
+         <div className="max-w-7xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div className="space-y-8">
+               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                  Innovation Hub
+               </div>
+               <h2 className="text-5xl font-black text-white tracking-tight leading-[1.1]">
+                  Where Big Ideas <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Become Startups.</span>
+               </h2>
+               <p className="text-lg text-slate-300 font-medium leading-relaxed max-w-lg">
+                  Join the university incubation ecosystem. Discover alumni success stories, access resources, and get the mentorship needed to transform your academic projects into thriving businesses.
+               </p>
+               <div className="flex flex-col sm:flex-row gap-5 pt-4">
+                   <Link to="/public-incubation" className="bg-blue-600 text-white px-10 py-5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 hover:scale-[1.05] transition-all shadow-[0_0_30px_rgba(37,99,235,0.4)] flex items-center justify-center gap-3">
+                     Explore Incubation Center <ArrowRight size={18} />
+                   </Link>
                </div>
             </div>
          </div>

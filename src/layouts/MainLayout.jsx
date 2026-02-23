@@ -12,7 +12,8 @@ import {
   LogOut,
   Search,
   Bell,
-  ChevronDown
+  ChevronDown,
+  Rocket
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -59,14 +60,18 @@ const MainLayout = () => {
     { to: '/my-items', icon: ShoppingBag, label: 'My Items', roles: ['All'] },
     { to: '/reservations', icon: CalendarCheck, label: 'Reservations', roles: ['Admin', 'HOD', 'StockManager', 'Lab Staff'] },
     { to: '/learning', icon: GraduationCap, label: 'Learning Center', roles: ['All'] },
+    { to: '/incubation', icon: Rocket, label: 'Incubation Center', roles: ['All'] },
     { to: '/reports', icon: BarChart3, label: 'Reports', roles: ['Admin', 'HOD'] },
     { to: '/users', icon: Users, label: 'Users', roles: ['Admin', 'HOD'] },
     { to: '/settings', icon: Settings, label: 'Settings', roles: ['All'] },
   ];
 
-  const filteredMenu = allMenuItems.filter(item => 
-      item.roles.includes('All') || item.roles.includes(userRole)
-  );
+  const filteredMenu = allMenuItems.filter(item => {
+      if (userRole === 'Incubation Manager') {
+          return ['/incubation', '/settings'].includes(item.to);
+      }
+      return item.roles.includes('All') || item.roles.includes(userRole);
+  });
 
   return (
     <div className="flex h-screen bg-[#f4f6f9] font-sans text-[#2c3e50]">

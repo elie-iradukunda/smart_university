@@ -194,6 +194,7 @@ const AddUserModal = ({ isOpen, onClose, editData = null }) => {
                         <option value="HOD">HOD</option>
                         <option value="Lab Staff">Lab Staff</option>
                         <option value="StockManager">StockManager</option>
+                        <option value="Incubation Manager">Incubation Manager</option>
                      </SelectGroup>
                      <InputGroup 
                         label="User ID / Student ID" 
