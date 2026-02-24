@@ -1,650 +1,564 @@
 import { Link } from 'react-router-dom';
 import { 
   ArrowRight, 
-  CheckCircle, 
   Cpu, 
-  Database, 
-  Globe, 
-  Zap, 
-  ShieldCheck, 
-  Layout, 
-  Users, 
   BookOpen,
-  Search,
-  Lock,
   Box,
-  ClipboardCheck,
-  LifeBuoy,
   ChevronRight,
-  ExternalLink,
   Activity,
   Package,
-  Clock,
-  Settings
+  Users,
+  Search,
+  Rocket,
+  ShieldCheck,
+  Zap,
+  Globe,
+  Settings,
+  Star,
+  Quote,
+  Layers,
+  BarChart3,
+  MousePointer2,
+  Menu,
+  X
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import API_BASE_URL from '../config/api';
 import EquipmentDetailsModal from '../components/EquipmentDetailsModal';
+import ResourceDetailsModal from '../components/ResourceDetailsModal';
 
 const Home = () => {
-  const [activeDept, setActiveDept] = useState('All');
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [bgIndex, setBgIndex] = useState(0);
-  const [fetchLoading, setFetchLoading] = useState(true);
-  const [equipmentData, setEquipmentData] = useState([]);
-  const [resourcesData, setResourcesData] = useState([]);
-  const [pagination, setPagination] = useState({ total: 0, pages: 1, current: 1 });
   const [dashStats, setDashStats] = useState({
-    totalEquipment: '...',
-    activeStudents: '...',
-    totalResources: '...',
+    totalEquipment: '0',
+    activeStudents: '0',
+    totalResources: '0',
     campusLabs: '12'
   });
 
-  const heroBgs = [
-    "https://images.unsplash.com/photo-1581093458891-b9883f8792e4?auto=format&fit=crop&q=80&w=1600",
-    "https://images.unsplash.com/photo-1523240715632-d984bb4b9749?auto=format&fit=crop&q=80&w=1600",
-    "https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80&w=1600",
-    "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&q=80&w=1600"
+  const [equipment, setEquipment] = useState([]);
+  const [learning, setLearning] = useState([]);
+  const [stories, setStories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [bgIndex, setBgIndex] = useState(0);
+
+  // Modal States
+  const [selectedEquipment, setSelectedEquipment] = useState(null);
+  const [selectedResource, setSelectedResource] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const heroImages = [
+    "https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?auto=format&fit=crop&q=80&w=1200", // Lab Tech
+    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=1200", // Workspace
+    "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80&w=1200", // Students
+    "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200", // Modern Office
+    "https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0?auto=format&fit=crop&q=80&w=1200"  // Engineering
   ];
 
-  const departments = [
-    { id: 'RE', name: 'Renewable Energy', icon: Zap, color: 'text-yellow-500', bg: 'bg-yellow-50' },
-    { id: 'MECH', name: 'Mechatronics', icon: Cpu, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'ICT', name: 'ICT', icon: Globe, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { id: 'ELEC', name: 'Electronics', icon: Database, color: 'text-green-500', bg: 'bg-green-50' },
-  ];
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      try {
+        const [statsRes, equipRes, learnRes, storyRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/dashboard/stats`).then(r => r.json()),
+          fetch(`${API_BASE_URL}/api/equipment?limit=4`).then(r => r.json()),
+          fetch(`${API_BASE_URL}/api/resources`).then(r => r.json()),
+          fetch(`${API_BASE_URL}/api/incubation/stories`).then(r => r.json())
+        ]);
 
-  const fetchEquipment = async (dept = activeDept, page = pagination.current) => {
-    setFetchLoading(true);
-    try {
-      const query = new URLSearchParams({
-        limit: 4,
-        page: page,
-        ...(dept !== 'All' && { department: dept })
-      });
-
-      const response = await fetch(`${API_BASE_URL}/api/equipment?${query.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch');
-      
-      const data = await response.json();
-      setEquipmentData(data.equipment || []);
-      setPagination({
-        total: data.total,
-        pages: data.pages,
-        current: data.currentPage
-      });
-    } catch (err) {
-      console.error("Equipment fetch error:", err);
-    } finally {
-      setFetchLoading(false);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/dashboard/stats`);
-      if (res.ok) {
-        const data = await res.json();
         setDashStats({
-          totalEquipment: data.totalEquipment?.toLocaleString() || '0',
-          activeStudents: data.totalUsers?.toLocaleString() || '0',
-          totalResources: data.totalResources?.toLocaleString() || '0',
-          campusLabs: data.campusLabs || '12'
+          totalEquipment: statsRes.totalEquipment?.toLocaleString() || '0',
+          activeStudents: statsRes.totalUsers?.toLocaleString() || '0',
+          totalResources: statsRes.totalResources?.toLocaleString() || '0',
+          campusLabs: statsRes.campusLabs || '12'
         });
+        setEquipment(equipRes.equipment || []);
+        setLearning(learnRes.slice(0, 3) || []);
+        setStories(storyRes.slice(0, 3) || []);
+      } catch (err) {
+        console.error("Home data fetch error:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Stats fetch error:", err);
-    }
-  };
+    };
 
-  const fetchResources = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/resources`);
-      if (res.ok) {
-        const data = await res.json();
-        // Take most recent 4 resources
-        setResourcesData(data.slice(0, 4));
-      }
-    } catch (err) {
-      console.error("Resources fetch error:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchEquipment();
-  }, [activeDept, pagination.current]);
-
-  useEffect(() => {
-    fetchStats();
-    fetchResources();
-    const bgTimer = setInterval(() => {
-      setBgIndex((prev) => (prev + 1) % heroBgs.length);
-    }, 6000);
-    return () => clearInterval(bgTimer);
+    fetchHomeData();
+    const timer = setInterval(() => {
+      setBgIndex((prev) => (prev + 1) % heroImages.length);
+    }, 3000);
+    return () => clearInterval(timer);
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-[#2c3e50] selection:bg-blue-100 selection:text-[#1f4fa3]">
+    <div className="min-h-screen bg-[#f8fafc] font-sans text-[#2c3e50] selection:bg-blue-100 italic-none">
+      
       {/* Navigation */}
-      <nav className="fixed w-full bg-white/70 backdrop-blur-xl border-b border-white/20 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#1f4fa3] to-[#60a5fa] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+      <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-xl border-b border-gray-100 z-[100]">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#1f4fa3] to-[#60a5fa] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/10 group-hover:scale-105 transition-transform">
               <Cpu size={22} />
             </div>
-            <span className="text-xl font-black tracking-tighter text-[#1f4fa3]">SMART<span className="text-[#60a5fa]">UNI</span></span>
-          </div>
-          <div className="hidden md:flex items-center gap-10 text-[11px] font-black uppercase tracking-widest text-[#6b7280]">
-            <a href="#how-it-works" className="hover:text-[#1f4fa3] transition-all">Shape</a>
-            <a href="#inventory" className="hover:text-[#1f4fa3] transition-all">Equipment</a>
+            <span className="text-xl font-black tracking-tighter text-[#1f4fa3]">
+              SMART<span className="text-[#60a5fa]">UNI</span>
+            </span>
+          </Link>
+          
+          <div className="hidden lg:flex items-center gap-10 text-[11px] font-black uppercase tracking-widest text-[#6b7280]">
+            <a href="#shape-guide" className="hover:text-[#1f4fa3] transition-all">Shape & Guide</a>
+            <a href="#equipment" className="hover:text-[#1f4fa3] transition-all">Equipment</a>
             <a href="#learning" className="hover:text-[#1f4fa3] transition-all">Learning</a>
-            <Link to="/public-incubation" className="hover:text-[#1f4fa3] transition-all">Incubation</Link>
-            <a href="#about" className="hover:text-[#1f4fa3] transition-all">Campus</a>
+            <Link to="/public-incubation" className="hover:text-[#1f4fa3] transition-all">Incubation Center</Link>
           </div>
-          <div className="flex items-center gap-6">
-            <Link to="/login" className="text-xs font-black uppercase tracking-widest text-[#6b7280] hover:text-[#1f4fa3] transition-colors">Log In</Link>
-            <Link to="/login" className="bg-[#1f4fa3] text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#173e82] transition-all shadow-xl shadow-blue-900/10 flex items-center gap-2 group">
-              Join Platform <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+
+          <div className="flex items-center gap-3 md:gap-6">
+            <Link to="/login" className="hidden md:block text-xs font-black uppercase tracking-widest text-[#6b7280] hover:text-[#1f4fa3] transition-colors">Log In</Link>
+            <Link to="/login" className="bg-[#1f4fa3] text-white px-4 md:px-6 py-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest hover:bg-[#173e82] transition-all shadow-xl shadow-blue-900/10 flex items-center gap-2 group">
+              Join <span className="hidden sm:inline">Platform</span> <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navbar Menu */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="lg:hidden bg-white border-b border-slate-100 overflow-hidden"
+            >
+              <div className="flex flex-col p-6 gap-6 text-[11px] font-black uppercase tracking-[0.2em] text-[#6b7280]">
+                <a href="#shape-guide" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#1f4fa3]">Shape & Guide</a>
+                <a href="#equipment" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#1f4fa3]">Equipment</a>
+                <a href="#learning" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#1f4fa3]">Learning</a>
+                <Link to="/public-incubation" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#1f4fa3]">Incubation Center</Link>
+                <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="pt-4 border-t border-slate-50 text-[#1f4fa3]">Log In</Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
-      {/* Hero Section with Persistent Backgrounds */}
-      <section className="relative h-[90vh] min-h-[750px] flex items-center overflow-hidden bg-slate-950">
-        {/* Persistent Background Stack */}
+      {/* Hero Section with Full Background Slider */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Background Slider */}
         <div className="absolute inset-0 z-0">
-          {heroBgs.map((url, i) => (
+          <AnimatePresence initial={false}>
             <motion.div
-              key={i}
-              initial={false}
-              animate={{ 
-                opacity: bgIndex === i ? 1 : 0,
-                scale: bgIndex === i ? 1 : 1.05
-              }}
-              transition={{ duration: 2, ease: "easeInOut" }}
+              key={bgIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2, ease: "linear" }}
               className="absolute inset-0"
             >
               <img 
-                src={url} 
+                src={heroImages[bgIndex]} 
+                alt="Lab Background" 
                 className="w-full h-full object-cover"
-                alt={`Campus scene ${i}`}
-                crossOrigin="anonymous"
-                referrerPolicy="no-referrer"
               />
-              {/* High Contrast Overlays */}
-              <div className="absolute inset-0 bg-slate-950/50" />
-              <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-transparent to-slate-950/90" />
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]" />
             </motion.div>
-          ))}
+          </AnimatePresence>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-20 text-center">
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.5 }}
-            className="max-w-3xl text-white"
+            transition={{ duration: 0.8 }}
+            className="space-y-8"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-black uppercase tracking-[0.2em] mb-8 shadow-sm">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-300 text-[10px] md:text-[11px] font-black uppercase tracking-widest border border-blue-400/20 backdrop-blur-md">
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
               Institutional Laboratory Portal
             </div>
-            <h1 className="text-6xl md:text-8xl font-black leading-[0.95] mb-8 tracking-tighter drop-shadow-2xl">
+            
+            <h1 className="text-4xl md:text-6xl lg:text-[5.5rem] font-black text-white leading-[1] tracking-tighter italic-none">
               The Heart of <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-300">Engineering.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-400">Engineering.</span>
             </h1>
-            <p className="text-xl text-blue-50/90 mb-10 leading-relaxed font-semibold max-w-xl drop-shadow-md">
-              A professional ecosystem built to manage, track, and empower access to specialized infrastructure across the entire faculty.
+            
+            <p className="text-lg md:text-xl text-slate-200 mb-12 leading-relaxed max-w-2xl mx-auto font-medium">
+              A professional ecosystem built to manage, track, and empower access to specialized infrastructure. We guide you from lab mastery to startup success.
             </p>
-            <div className="flex flex-col sm:flex-row gap-5">
-              <Link to="/login" className="bg-white text-[#1f4fa3] px-10 py-5 rounded-2xl text-lg font-bold hover:bg-blue-50 hover:scale-[1.05] transition-all shadow-2xl flex items-center justify-center gap-3">
-                Enter Portal <ChevronRight size={22} />
+            
+            <div className="flex flex-col sm:flex-row gap-5 justify-center">
+              <Link to="/login" className="bg-[#1f4fa3] text-white px-10 py-5 rounded-2xl text-sm font-black uppercase tracking-widest shadow-2xl shadow-blue-500/20 hover:shadow-blue-500/40 hover:bg-blue-600 hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
+                Enter Portal <ChevronRight size={18} />
               </Link>
-              <a href="#inventory" className="px-10 py-5 rounded-2xl text-lg font-bold text-white bg-white/5 backdrop-blur-md border border-white/20 hover:bg-white/10 transition-all flex items-center justify-center gap-3 group">
-                Browse Assets <Box size={22} className="group-hover:rotate-12 transition-transform" />
+              <a href="#shape-guide" className="bg-white/10 backdrop-blur-md border-2 border-white/20 text-white px-10 py-5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-white/20 hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
+                Quick Guide <MousePointer2 size={18} />
               </a>
             </div>
           </motion.div>
         </div>
+
+        {/* Infinity Moving Images Marquee */}
+        <div className="absolute bottom-0 left-0 w-full overflow-hidden bg-white/5 backdrop-blur-sm border-t border-white/10 py-8">
+           <div className="flex whitespace-nowrap animate-marquee">
+              {[...heroImages, ...heroImages].map((img, i) => (
+                <div key={i} className="flex-none w-64 md:w-80 h-40 md:h-48 mx-4 rounded-2xl overflow-hidden border border-white/20 shadow-xl group">
+                   <img src={img} className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500" />
+                </div>
+              ))}
+           </div>
+        </div>
       </section>
 
-      {/* Dashboard Look: High Level Stats */}
-      <section className="relative -mt-20 z-20 px-6 pb-32">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Adding Marquee Animation Styles */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          animation: marquee 40s linear infinite;
+        }
+      `}} />
+
+      {/* DASHBOARD SUMMARY CARDS */}
+      <section className="px-6 max-w-7xl mx-auto py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
            <DashStatCard label="Total Equipment" value={dashStats.totalEquipment} icon={Package} color="blue" />
            <DashStatCard label="Active Students" value={dashStats.activeStudents} icon={Users} color="indigo" />
-           <DashStatCard label="Resources" value={dashStats.totalResources} icon={BookOpen} color="purple" />
+           <DashStatCard label="Resources" value={dashStats.totalResources} icon={BookOpen} color="emerald" />
            <DashStatCard label="Campus Labs" value={dashStats.campusLabs} icon={Activity} color="cyan" />
         </div>
       </section>
 
-      {/* Equipment by Departments Section (Dashboard Style) */}
-      <section id="inventory" className="py-32 bg-white px-6">
-         <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 mb-16">
-               <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-[#1f4fa3]">
-                    <Box size={18} className="animate-spin-slow" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Inventory Explorer</span>
-                  </div>
-                  <h2 className="text-4xl font-black text-[#2c3e50] tracking-tight">Institutional Assets</h2>
-                  <p className="text-[#6b7280] max-w-lg font-medium">Recorded and maintained by our certified storekeepers across all departments.</p>
-               </div>
-               
-               <div className="flex bg-[#f8fafc] p-1.5 rounded-2xl border border-slate-100 w-full lg:w-auto overflow-x-auto scrollbar-hide">
-                  {['All', 'RE', 'MECH', 'ICT', 'ELEC'].map(tab => (
-                    <button 
-                      key={tab}
-                      onClick={() => {
-                        setActiveDept(tab);
-                        setPagination(prev => ({ ...prev, current: 1 }));
-                      }}
-                      className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeDept === tab ? 'bg-white text-[#1f4fa3] shadow-lg shadow-blue-900/5' : 'text-[#6b7280] hover:text-[#1f4fa3]'}`}
-                    >
-                      {tab === 'All' ? 'All Departments' : tab}
-                    </button>
-                  ))}
-               </div>
+      {/* SHAPE & GUIDE - COMPREHENSIVE PLATFORM INFO */}
+      <section id="shape-guide" className="py-32 bg-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-slate-50/70 -skew-x-12 translate-x-1/2 -z-10" />
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+            <div className="space-y-10">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+              >
+                <span className="text-blue-600 text-xs font-black tracking-[0.3em] uppercase mb-6 inline-block bg-blue-50 px-5 py-2 rounded-full">Platform Ecosystem</span>
+                <h2 className="text-5xl font-black text-[#2c3e50] tracking-tighter leading-[0.95] mb-8">
+                  Designed for <br/>
+                  <span className="text-blue-600 italic-none">Elite Engineering.</span>
+                </h2>
+                <p className="text-lg text-[#6b7280] font-medium leading-relaxed max-w-xl">
+                  SmartUni integrates hardware management, digital learning, and business incubation into a single streamlined workflow. Our mission is to eliminate barriers between institutional resources and student innovation.
+                </p>
+              </motion.div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <SummaryFeature icon={Layers} title="Unified Control" desc="All departments synced in real-time under one central database." />
+                <SummaryFeature icon={BarChart3} title="Data Analytics" desc="Predictive maintenance and usage tracking for institutional assets." />
+                <SummaryFeature icon={Globe} title="Cloud Sync" desc="Access catalogs and reservation status from any device, anywhere." />
+                <SummaryFeature icon={ShieldCheck} title="Role-Based Security" desc="Granular access control for students, lab staff, and administrators." />
+              </div>
             </div>
 
-            {/* Equipment Grid - Dashboard List Style */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-               {/* Sidebar Dept List */}
-               <div className="lg:col-span-3 space-y-4">
-                  {departments.map((dept) => (
-                    <div 
-                      key={dept.id} 
-                      onClick={() => {
-                        setActiveDept(dept.id);
-                        setPagination(prev => ({ ...prev, current: 1 }));
-                      }}
-                      className={`p-6 rounded-[2rem] border flex items-center justify-between group transition-all cursor-pointer ${activeDept === dept.id ? 'bg-white shadow-xl shadow-blue-900/5 border-blue-100' : 'bg-[#f8fafc] border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-blue-900/5'}`}
-                    >
-                       <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 ${activeDept === dept.id ? 'bg-blue-50 text-[#1f4fa3]' : `${dept.bg} ${dept.color}`} rounded-2xl flex items-center justify-center`}>
-                            <dept.icon size={20} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-black text-[#2c3e50]">{dept.name}</p>
-                            <p className="text-[10px] font-bold text-[#9ca3af]">Official Registry</p>
-                          </div>
-                       </div>
-                       <ChevronRight size={16} className={`transition-colors ${activeDept === dept.id ? 'text-[#1f4fa3]' : 'text-slate-300 group-hover:text-[#1f4fa3]'}`} />
-                    </div>
-                  ))}
-                  <div className="p-8 bg-gradient-to-br from-[#1f4fa3] to-[#4f46e5] rounded-[2rem] text-white space-y-4 shadow-xl shadow-blue-900/20">
-                     <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Technician Note</p>
-                     <p className="text-sm font-bold leading-relaxed italic">"Inventory is synced every 24 hours with the central registry."</p>
-                     <button className="w-full py-3 bg-white/10 hover:bg-white/20 transition-all rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                        View Staff Protocols <ExternalLink size={12} />
-                     </button>
-                  </div>
-               </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <GuideCard index="01" title="Discover" icon={Search} color="blue" desc="Explore the full catalog of specialized engineering tools and lab spaces." />
+              <GuideCard index="02" title="Certify" icon={BookOpen} color="indigo" desc="Watch tutorials and download manuals to unlock equipment access." />
+              <GuideCard index="03" title="Reserve" icon={Package} color="emerald" desc="Instantly book assets and track your active loans in real-time." />
+              <GuideCard index="04" title="Incubate" icon={Rocket} color="teal" desc="Propose your prototype for the Incubation Center to receive funding." />
+            </div>
+          </div>
+        </div>
+      </section>
 
-               {/* Equipment Table Preview */}
-               <div className="lg:col-span-9 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-                  <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#2c3e50]">
-                       Live Registry Preview <span className="text-slate-300 ml-2">({pagination.total} Items)</span>
-                     </h3>
-                     <div className="flex items-center gap-4">
-                        <Link to="/login" className="text-[10px] font-black uppercase tracking-widest text-[#1f4fa3] hover:underline">Full Details</Link>
-                        {pagination.pages > 1 && (
-                          <div className="flex items-center gap-2">
-                             <button 
-                                disabled={pagination.current === 1}
-                                onClick={() => setPagination(prev => ({ ...prev, current: prev.current - 1 }))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-[#1f4fa3] disabled:opacity-30 disabled:cursor-not-allowed"
-                             >
-                                <ChevronRight size={14} className="rotate-180" />
-                             </button>
-                             <span className="text-[10px] font-black text-slate-400">{pagination.current} / {pagination.pages}</span>
-                             <button 
-                                disabled={pagination.current === pagination.pages}
-                                onClick={() => setPagination(prev => ({ ...prev, current: prev.current + 1 }))}
-                                className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-[#1f4fa3] disabled:opacity-30 disabled:cursor-not-allowed"
-                             >
-                                <ChevronRight size={14} />
-                             </button>
-                          </div>
-                        )}
-                     </div>
-                  </div>
-                  
-                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-                     {fetchLoading ? (
-                        <div className="col-span-2 flex items-center justify-center h-full">
-                           <Activity className="animate-spin text-[#1f4fa3]" size={32} />
-                        </div>
-                     ) : (
-                        equipmentData.map((item, idx) => (
-                           <div 
-                             key={idx} 
-                             onClick={() => setSelectedItem(item)}
-                             className="bg-[#f8fafc] border border-slate-50 rounded-3xl p-4 flex gap-4 hover:shadow-lg hover:shadow-blue-900/5 transition-all group outline outline-1 outline-slate-100 cursor-pointer"
-                           >
-                              <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 bg-slate-200">
-                                <img 
-                                  src={item.image || "https://images.unsplash.com/photo-1581093458891-b9883f8792e4?auto=format&fit=crop&q=80&w=200"} 
-                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                                  alt={item.name} 
-                                  crossOrigin="anonymous"
-                                  referrerPolicy="no-referrer"
-                                />
-                              </div>
-                              <div className="flex flex-col justify-between py-1">
-                                 <div>
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-[#1f4fa3] bg-blue-50 px-2 py-0.5 rounded-full mb-2 inline-block">{item.department}</span>
-                                    <h4 className="text-sm font-black text-[#2c3e50] line-clamp-1">{item.name}</h4>
-                                    <p className="text-[10px] font-bold text-[#9ca3af] mt-1">SN: {item.serialNumber || 'Institutional Asset'}</p>
-                                 </div>
-                                 <div className="flex items-center gap-2 mt-2">
-                                    <div className={`w-2 h-2 rounded-full ${item.status === 'Available' ? 'bg-green-500' : item.status === 'In Use' ? 'bg-amber-500' : 'bg-red-500'}`} />
-                                    <span className="text-[10px] font-black uppercase text-[#6b7280]">{item.status}</span>
-                                 </div>
-                              </div>
-                           </div>
-                        ))
-                     )}
+      {/* EQUIPMENT PREVIEW */}
+      <section id="equipment" className="py-24 px-6 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-10 mb-16 px-2">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl font-black text-[#2c3e50] tracking-tight mb-4">Latest Assets</h2>
+            <p className="text-[#6b7280] font-medium text-lg leading-relaxed">Check out the newest additions to our faculty laboratories, ready for reservation.</p>
+          </div>
+          <Link to="/login" className="text-[#1f4fa3] font-black uppercase text-xs tracking-widest flex items-center gap-3 bg-white px-8 py-4 rounded-2xl hover:bg-slate-50 transition-all border border-slate-100 shadow-sm">
+            View Inventory <ArrowRight size={18} />
+          </Link>
+        </div>
 
-                     {!fetchLoading && equipmentData.length === 0 && (
-                        <div className="col-span-2 flex flex-col items-center justify-center opacity-40">
-                           <Box size={48} className="mb-4" />
-                           <p className="text-xs font-black uppercase tracking-widest">No Items Registered Yet</p>
-                        </div>
-                     )}
-                  </div>
-
-                  <EquipmentDetailsModal 
-                     isOpen={!!selectedItem}
-                     onClose={() => setSelectedItem(null)}
-                     equipment={selectedItem}
-                     readOnly={true}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {equipment.length > 0 ? equipment.map((item, idx) => (
+             <motion.div 
+               whileHover={{ y: -8 }}
+               key={idx} 
+               onClick={() => setSelectedEquipment(item)}
+               className="bg-white border border-slate-100 rounded-[2.5rem] p-5 shadow-sm hover:shadow-2xl transition-all h-full flex flex-col group overflow-hidden cursor-pointer"
+             >
+               <div className="aspect-square rounded-[2rem] overflow-hidden mb-6 bg-slate-50 relative">
+                  <img 
+                    src={item.image || "https://images.unsplash.com/photo-1581093458891-b9883f8792e4?auto=format&fit=crop&q=80&w=600"} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    crossOrigin="anonymous"
                   />
-                  <div className="mt-auto p-10 bg-slate-50 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
-                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-[#1f4fa3]">
-                           <Lock size={20} />
-                        </div>
-                        <p className="text-sm font-bold text-[#2c3e50] max-w-xs">To submit a request for any of these items, please log in with your institutional credentials.</p>
-                     </div>
-                     <Link to="/login" className="bg-[#1f4fa3] text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-[#173e82] transition-all flex items-center gap-2 whitespace-nowrap">
-                        Sign In to Request <ChevronRight size={14} />
-                     </Link>
+                  <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1.5 rounded-full text-[9px] font-black uppercase text-blue-600 shadow-sm border border-blue-100">
+                    {item.department}
                   </div>
                </div>
+               <div className="flex-1 flex flex-col px-2">
+                 <h4 className="text-lg font-black text-[#2c3e50] mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors uppercase italic-none sm:text-lg">{item.name}</h4>
+                 <div className="flex items-center justify-between mt-auto pt-4">
+                    <div className="flex items-center gap-2">
+                       <span className={`w-2 h-2 rounded-full ${item.status === 'Available' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`} />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.status}</span>
+                    </div>
+                    <button className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                       <ArrowRight size={14} />
+                    </button>
+                 </div>
+               </div>
+             </motion.div>
+          )) : (
+            <div className="col-span-full py-24 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
+              <Package size={64} className="mx-auto mb-6 text-slate-200" />
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-sm italic-none">Synchronizing with Lab Database...</p>
             </div>
-         </div>
+          )}
+        </div>
       </section>
 
-      {/* Incubation Center Spotlight */}
-      <section className="py-32 bg-slate-950 px-6 relative overflow-hidden">
-         <div className="absolute inset-0 z-0">
-           <img 
-             src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2850&q=80" 
-             className="w-full h-full object-cover opacity-20" 
-             alt="Incubation Center"
-             crossOrigin="anonymous"
-             referrerPolicy="no-referrer"
-           />
-           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/40" />
-         </div>
-         <div className="max-w-7xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <div className="space-y-8">
-               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                  Innovation Hub
-               </div>
-               <h2 className="text-5xl font-black text-white tracking-tight leading-[1.1]">
-                  Where Big Ideas <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Become Startups.</span>
-               </h2>
-               <p className="text-lg text-slate-300 font-medium leading-relaxed max-w-lg">
-                  Join the university incubation ecosystem. Discover alumni success stories, access resources, and get the mentorship needed to transform your academic projects into thriving businesses.
-               </p>
-               <div className="flex flex-col sm:flex-row gap-5 pt-4">
-                   <Link to="/public-incubation" className="bg-blue-600 text-white px-10 py-5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 hover:scale-[1.05] transition-all shadow-[0_0_30px_rgba(37,99,235,0.4)] flex items-center justify-center gap-3">
-                     Explore Incubation Center <ArrowRight size={18} />
-                   </Link>
-               </div>
-            </div>
-         </div>
+      {/* LEARNING HUB */}
+      <section id="learning" className="py-32 bg-slate-50/50 border-y border-slate-100 relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-20">
+            <span className="text-blue-600 text-[11px] font-black tracking-[0.3em] uppercase mb-4 inline-block bg-blue-50 px-4 py-1.5 rounded-full">Knowledge Hub</span>
+            <h2 className="text-4xl md:text-5xl font-black text-[#2c3e50] tracking-tight mb-8">Master Your Tools</h2>
+            <p className="text-[#6b7280] font-medium text-lg leading-relaxed max-w-2xl mx-auto italic-none">Our resource library contains essential guides and interactive manuals for every piece of high-precision equipment on campus.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            {learning.length > 0 ? learning.map((res, idx) => (
+              <motion.div 
+                whileHover={{ y: -10 }}
+                key={idx} 
+                onClick={() => setSelectedResource(res)}
+                className="bg-white rounded-[3rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all border border-slate-100 flex flex-col h-full group cursor-pointer"
+              >
+                <div className="h-64 relative overflow-hidden bg-slate-200">
+                  <img src={res.thumbnail || "https://images.unsplash.com/photo-1581091226033-d5c48150dbbc?auto=format&fit=crop&q=80&w=800"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" crossOrigin="anonymous" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                  <div className="absolute top-6 right-6 flex items-center gap-3">
+                    <div className="bg-white/95 backdrop-blur px-4 py-2 rounded-2xl flex items-center gap-2 shadow-xl">
+                      <Zap size={16} className="text-blue-600" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-800">{res.type || 'Guide'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-10 flex flex-col flex-1">
+                  <h3 className="text-2xl font-black text-[#2c3e50] mb-4 leading-tight group-hover:text-blue-600 transition-colors italic-none">{res.title}</h3>
+                  <p className="text-base text-[#6b7280] font-medium mb-10 flex-1 leading-relaxed italic-none">Comprehensive technical certification module designed to ensure safe and proficient laboratory operation.</p>
+                  <button className="text-[11px] font-black uppercase tracking-[0.2em] text-[#1f4fa3] flex items-center gap-3 hover:gap-5 transition-all">
+                    Access Resource <ChevronRight size={16} />
+                  </button>
+                </div>
+              </motion.div>
+            )) : (
+              <p className="col-span-full text-center text-slate-400 py-28 italic-none font-bold uppercase tracking-widest opacity-40">Loading latest curriculum...</p>
+            )}
+          </div>
+        </div>
       </section>
 
-      {/* Campus & Lab Moments */}
-      <section id="about" className="py-32 px-6 bg-[#f8fafc]">
-         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <div className="space-y-8">
-               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#1f4fa3]">Inside Our Labs</span>
-               <h2 className="text-5xl font-black text-[#2c3e50] tracking-tight leading-[1.1]">Where Theory Meets <span className="text-[#1f4fa3]">Reality.</span></h2>
-               <p className="text-lg text-[#6b7280] font-medium leading-relaxed">
-                  Our state-of-the-art facilities are designed to foster innovation. From small research groups to large departmental lectures, our labs provide the physical tools necessary for groundbreaking engineering discovery.
-               </p>
-               <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-green-500">
-                        <CheckCircle size={24} />
-                     </div>
-                     <h4 className="font-black text-[#2c3e50]">24/7 Security</h4>
-                     <p className="text-xs text-[#6b7280] font-bold">Every piece of equipment is electronically tagged and monitored.</p>
+      {/* INCUBATION SPOTLIGHT */}
+      <section className="py-32 px-6 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-10 mb-20 px-4">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl font-black text-[#2c3e50] tracking-tight mb-4">Startup Spotlights</h2>
+            <p className="text-[#6b7280] font-medium text-lg leading-relaxed">Witness the transformation of academic projects into viable technology startups through our specialized incubation ecosystem.</p>
+          </div>
+          <Link to="/public-incubation" className="text-white bg-gradient-to-r from-teal-600 to-emerald-600 px-8 py-5 rounded-[2rem] font-black uppercase text-xs tracking-widest flex items-center gap-3 shadow-xl shadow-teal-500/20 hover:shadow-teal-500/40 hover:-translate-y-1 transition-all">
+            Enter Incubator <Rocket size={20} />
+          </Link>
+        </div>
+
+        <div className="relative overflow-hidden py-10">
+          <div className="flex gap-10 animate-marquee hover:pause whitespace-nowrap">
+            {(stories.length > 0 ? [...stories, ...stories] : []).map((story, idx) => (
+              <motion.div 
+                whileHover={{ y: -8 }}
+                key={idx} 
+                className="w-[400px] flex-none bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col group hover:shadow-2xl transition-all whitespace-normal"
+              >
+                <div className="h-64 relative overflow-hidden bg-slate-50">
+                  <img src={story.image || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" crossOrigin="anonymous" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  <div className="absolute bottom-6 left-6 text-white text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest mb-1 opacity-80">Founder</p>
+                    <p className="text-lg font-black">{story.studentName}</p>
                   </div>
-                  <div className="space-y-4">
-                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-blue-500">
-                        <Users size={24} />
+                </div>
+                <div className="p-10 flex flex-col flex-1 text-left">
+                  <h3 className="text-2xl font-black text-[#2c3e50] mb-4 leading-[1.1]">{story.projectName}</h3>
+                  <p className="text-sm text-slate-500 font-medium mb-8 leading-relaxed line-clamp-3">{story.description}</p>
+                  <div className="mt-auto flex items-center justify-between p-6 bg-slate-50/80 rounded-3xl border border-slate-100">
+                     <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Growth Status</span>
+                     <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-black uppercase text-emerald-600 tracking-widest">{story.companyStatus || 'Funded'}</span>
+                        <CheckCircle2 size={16} className="text-emerald-500" />
                      </div>
-                     <h4 className="font-black text-[#2c3e50]">Expert Staff</h4>
-                     <p className="text-xs text-[#6b7280] font-bold">Dedicated technicians available for training and assistance.</p>
                   </div>
-               </div>
+                </div>
+              </motion.div>
+            ))}
+            
+            {stories.length === 0 && (
+              <p className="w-full text-center text-slate-400 py-28 italic-none font-black tracking-widest uppercase opacity-40">Fetching innovative breakthroughs...</p>
+            )}
+          </div>
+        </div>
+
+        <style dangerouslySetInnerHTML={{ __html: `
+          .pause:hover {
+            animation-play-state: paused;
+          }
+        `}} />
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-white border-t border-slate-100 text-[#6b7280] py-24 px-6 relative overflow-hidden">
+         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-16 mb-20">
+            <div className="lg:col-span-1 space-y-6">
+              <Link to="/" className="flex items-center gap-3 text-[#2c3e50] group">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#1f4fa3] to-[#60a5fa] rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/10">
+                  <Cpu size={24} />
+                </div>
+                <span className="text-3xl font-black tracking-tighter uppercase">SMART<span className="text-[#60a5fa]">UNI</span></span>
+              </Link>
+              <p className="text-sm font-medium leading-relaxed">
+                Empowering the next generation of engineers through advanced facility management and strategic resource allocation.
+              </p>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 relative">
-               <div className="space-y-4 pt-12">
-                  <div className="relative group overflow-hidden rounded-[3rem] shadow-xl">
-                    <img 
-                      src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=1000" 
-                      className="w-full h-80 object-cover bg-slate-200 group-hover:scale-110 transition-transform duration-700" 
-                      alt="Students in Lab" 
-                      crossOrigin="anonymous"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-                  <div className="relative group overflow-hidden rounded-[3rem] shadow-xl">
-                    <img 
-                      src="https://images.unsplash.com/photo-1581091226033-d5c48150dbbc?auto=format&fit=crop&q=80&w=1000" 
-                      className="w-full h-56 object-cover bg-slate-200 group-hover:scale-110 transition-transform duration-700" 
-                      alt="Lab session" 
-                      crossOrigin="anonymous"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-               </div>
-               <div className="space-y-4">
-                  <div className="relative group overflow-hidden rounded-[3rem] shadow-xl">
-                    <img 
-                      src="https://images.unsplash.com/photo-1576085898323-2183ba9b2203?auto=format&fit=crop&q=80&w=1000" 
-                      className="w-full h-56 object-cover bg-slate-200 group-hover:scale-110 transition-transform duration-700" 
-                      alt="Engineering tool" 
-                      crossOrigin="anonymous"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-                  <div className="relative group overflow-hidden rounded-[3rem] shadow-xl">
-                    <img 
-                      src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=1000" 
-                      className="w-full h-80 object-cover bg-slate-200 group-hover:scale-110 transition-transform duration-700" 
-                      alt="Collaboration" 
-                      crossOrigin="anonymous"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-               </div>
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-white rounded-full flex items-center justify-center shadow-2xl z-20 border-8 border-[#f8fafc]">
-                  <div className="text-center">
-                    <p className="text-2xl font-black text-[#1f4fa3]">12</p>
-                    <p className="text-[10px] font-black uppercase text-[#9ca3af]">World-class Labs</p>
-                  </div>
-               </div>
+            <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-10">
+              <FooterLinks title="Platform" links={['Management', 'Equipment', 'Learning Map', 'Cloud Sync']} />
+              <FooterLinks title="Faculty" links={['Mechatronics', 'Electronics', 'ICT Center', 'Renewable Lab']} />
+              <FooterLinks title="Navigation" links={['Shape & Guide', 'Login Portal', 'Student Card', 'Support']} />
+              <FooterLinks title="Company" links={['About Hub', 'Staff Portal', 'Privacy Desk', 'Guidelines']} />
             </div>
-         </div>
-      </section>
-
-      {/* Learning Center (Public Access) */}
-      <section id="learning" className="py-32 px-6 bg-slate-900 overflow-hidden relative">
-         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none select-none">
-            <div className="absolute h-px w-full bg-gradient-to-r from-transparent via-white to-transparent top-1/4" />
-            <div className="absolute h-px w-full bg-gradient-to-r from-transparent via-white to-transparent top-3/4" />
          </div>
          
-         <div className="max-w-7xl mx-auto relative z-10">
-            <div className="text-center mb-20 text-white">
-               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#60a5fa] mb-6 inline-block">Learning Resources</span>
-               <h2 className="text-5xl font-black tracking-tight">Open Knowledge Hub</h2>
-               <p className="text-slate-400 max-w-2xl mx-auto mt-6 text-lg font-medium italic">Preparing the next generation of engineers with high-quality training materials.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-               {resourcesData.length > 0 ? resourcesData.map((resource, idx) => (
-                  <LearningCard 
-                     key={resource.id || idx}
-                     title={resource.title} 
-                     type={resource.type} 
-                     color={idx % 4 === 0 ? "blue" : idx % 4 === 1 ? "indigo" : idx % 4 === 2 ? "purple" : "cyan"} 
-                     img={resource.thumbnail || "https://images.unsplash.com/photo-1581093588401-fbb62a02f120?auto=format&fit=crop&q=80&w=600"}
-                     url={resource.url}
-                  />
-               )) : (
-                  <>
-                     <LearningCard 
-                        title="Lab Safety Essentials" 
-                        type="PDF" 
-                        color="blue" 
-                        img="https://images.unsplash.com/photo-1581093588401-fbb62a02f120?auto=format&fit=crop&q=80&w=600"
-                     />
-                     <LearningCard 
-                        title="Intro to Robotics" 
-                        type="Video" 
-                        color="indigo" 
-                        img="https://images.unsplash.com/photo-1531746790731-6c087fecd05a?auto=format&fit=crop&q=80&w=600"
-                     />
-                     <LearningCard 
-                        title="Circuit Design Basics" 
-                        type="Document" 
-                        color="purple" 
-                        img="https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?auto=format&fit=crop&q=80&w=600"
-                     />
-                     <LearningCard 
-                        title="Smart Grid Systems" 
-                        type="Link" 
-                        color="cyan" 
-                        img="https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&q=80&w=600"
-                     />
-                  </>
-               )}
-            </div>
-
-            <div className="mt-20 text-center">
-               <Link to="/login" className="inline-flex items-center gap-3 text-[#60a5fa] font-black uppercase tracking-widest text-xs hover:text-white transition-colors group">
-                  Access Full Digital Library <ArrowRight size={14} className="group-hover:translate-x-2 transition-transform" />
-               </Link>
-            </div>
-         </div>
-      </section>
-
-      {/* Footer (Matches Dashboard UI) */}
-      <footer className="bg-white text-[#2c3e50] py-24 px-6 border-t border-slate-100 relative overflow-hidden">
-         <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
-            <div className="flex items-center gap-2 mb-10">
-               <div className="w-12 h-12 bg-[#1f4fa3] rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-900/10">
-                  <Cpu size={24} />
-               </div>
-               <span className="text-4xl font-black tracking-tighter uppercase text-[#1f4fa3]">Smart <span className="text-[#60a5fa]">Uni</span></span>
-            </div>
-            
-            <nav className="flex flex-wrap justify-center gap-10 mb-16 text-xs font-black uppercase tracking-widest text-[#6b7280]">
-               <a href="#" className="hover:text-[#1f4fa3] transition-colors">Catalog</a>
-               <a href="#" className="hover:text-[#1f4fa3] transition-colors">Security</a>
-               <a href="#" className="hover:text-[#1f4fa3] transition-colors">Campus</a>
-               <a href="#" className="hover:text-[#1f4fa3] transition-colors">Contact</a>
-               <a href="#" className="hover:text-[#1f4fa3] transition-colors">Documentation</a>
-            </nav>
-
-            <div className="w-full h-px bg-slate-50 mb-16" />
-
-            <div className="flex flex-col md:flex-row justify-between items-center w-full text-[10px] font-black uppercase tracking-widest text-slate-400 gap-8">
-               <p>&copy; 2024 Smart University Platform. engineering ecosystem.</p>
-               <div className="flex items-center gap-10">
-                  <div className="flex -space-x-2">
-                     <div className="w-8 h-8 rounded-full border-4 border-white bg-blue-500 flex items-center justify-center text-white text-[8px] font-black">SU</div>
-                     <div className="w-8 h-8 rounded-full border-4 border-white bg-indigo-500 flex items-center justify-center text-white text-[8px] font-black">EN</div>
-                  </div>
-                  <div className="flex gap-8">
-                    <a href="#" className="hover:text-[#1f4fa3]">Privacy</a>
-                    <a href="#" className="hover:text-[#1f4fa3]">Terms</a>
-                  </div>
-               </div>
+         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center w-full text-[11px] font-black tracking-[0.3em] border-t border-slate-100 pt-12 gap-10 uppercase opacity-60">
+            <p>&copy; 2026 Institutional Laboratory Portal. All rights reserved.</p>
+            <div className="flex gap-10">
+              <a href="#" className="hover:text-[#1f4fa3] transition-colors">Privacy</a>
+              <a href="#" className="hover:text-[#1f4fa3] transition-colors">Terms</a>
+              <a href="#" className="hover:text-[#1f4fa3] transition-colors">Contact Center</a>
             </div>
          </div>
       </footer>
+
+      {/* MODALS */}
+      <EquipmentDetailsModal 
+        isOpen={!!selectedEquipment} 
+        onClose={() => setSelectedEquipment(null)} 
+        equipment={selectedEquipment} 
+      />
+      <ResourceDetailsModal 
+        isOpen={!!selectedResource} 
+        onClose={() => setSelectedResource(null)} 
+        resource={selectedResource} 
+      />
     </div>
   );
 };
 
+// COMPONENT HELPERS
+
 const DashStatCard = ({ label, value, icon: Icon, color }) => (
-  <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-900/5 flex flex-col justify-between hover:scale-[1.02] transition-all group">
-     <div className="flex justify-between items-start mb-6">
-        <div>
-           <h3 className="text-4xl font-black text-[#2c3e50] mb-1 tracking-tighter">{value}</h3>
-           <p className="text-[10px] font-black uppercase tracking-widest text-[#9ca3af]">{label}</p>
-        </div>
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform ${
-           color === 'blue' ? 'bg-blue-50 text-blue-500' : 
-           color === 'indigo' ? 'bg-indigo-50 text-indigo-500' : 
-           color === 'purple' ? 'bg-purple-50 text-purple-500' : 'bg-cyan-50 text-cyan-500'
-        }`}>
-           <Icon size={20} />
-        </div>
-     </div>
-     <div className="flex items-center gap-2 text-[10px] text-[#22c55e] font-black uppercase tracking-widest mt-auto">
-        <Activity size={12} /> System Active
-     </div>
-  </div>
-);
-
-const LearningCard = ({ title, type, color, img, url }) => (
-  <div 
-    onClick={() => url && window.open(url, '_blank')}
-    className="bg-white/5 backdrop-blur-md border border-white/10 rounded-[2.5rem] hover:bg-white/10 transition-all cursor-pointer group hover:scale-[1.05] flex flex-col h-full overflow-hidden"
+  <motion.div 
+    whileHover={{ y: -5 }}
+    className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-slate-200/40 flex flex-col justify-between hover:shadow-blue-500/5 transition-all group border border-slate-50 overflow-hidden relative"
   >
-     <div className="h-48 w-full relative">
-        <img 
-          src={img} 
-          className="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity" 
-          alt={title}
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
-        <div className={`absolute top-6 left-6 w-12 h-12 ${
-          color === 'blue' ? 'bg-blue-500/20 text-blue-400' : 
-          color === 'indigo' ? 'bg-indigo-500/20 text-indigo-400' : 
-          color === 'purple' ? 'bg-purple-500/20 text-purple-400' : 'bg-cyan-500/20 text-cyan-400'
-        } rounded-2xl backdrop-blur-md flex items-center justify-center`}>
-           {type === 'Video' ? <PlayLine size={20} /> : type === 'PDF' ? <FileText size={20} /> : <BookOpen size={20} />}
+     <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50/50 rounded-full blur-[60px] -mr-16 -mt-16 pointer-events-none group-hover:bg-blue-50/50 transition-colors" />
+     <div className="flex justify-between items-start mb-8 relative z-10">
+        <h3 className="text-5xl font-black text-[#2c3e50] tracking-tighter leading-none">{value}</h3>
+        <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center shadow-inner ${
+           color === 'blue' ? 'bg-blue-50 text-blue-600 shadow-blue-500/10' : 
+           color === 'indigo' ? 'bg-indigo-50 text-indigo-600 shadow-indigo-500/10' : 
+           color === 'emerald' ? 'bg-emerald-50 text-emerald-600 shadow-emerald-500/10' : 
+           'bg-cyan-50 text-cyan-600 shadow-cyan-500/10'
+        }`}>
+           <Icon size={32} />
         </div>
      </div>
-     <div className="p-8 pt-4">
-        <h4 className="text-white font-black text-xl mb-4 leading-tight group-hover:text-blue-300 transition-colors uppercase tracking-tight">{title}</h4>
-        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Public Resource &bull; {type}</p>
+     <div className="relative z-10">
+        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#9ca3af] mb-4">{label}</p>
+        <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-auto">
+           <Activity size={14} className="animate-pulse" /> Live Status
+        </div>
      </div>
+  </motion.div>
+);
+
+const GuideCard = ({ index, title, desc, icon: Icon, color }) => (
+  <motion.div 
+    whileHover={{ scale: 1.02 }}
+    className="bg-white p-10 rounded-[3rem] shadow-xl shadow-slate-200/40 border border-slate-50 flex flex-col group relative"
+  >
+    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-10 shadow-sm border ${
+      color === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+      color === 'indigo' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
+      color === 'emerald' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+      'bg-teal-50 text-teal-600 border-teal-100'
+    }`}>
+      <Icon size={32} />
+    </div>
+    <div className="flex items-start gap-5">
+      <span className="text-4xl font-black text-slate-100/50 leading-none">{index}</span>
+      <div>
+        <h3 className="text-2xl font-black text-[#2c3e50] mb-3 leading-none italic-none">{title}</h3>
+        <p className="text-sm font-medium text-[#6b7280] leading-relaxed italic-none">{desc}</p>
+      </div>
+    </div>
+  </motion.div>
+);
+
+const SummaryFeature = ({ icon: Icon, title, desc }) => (
+  <div className="flex items-start gap-4">
+    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-slate-100 text-[#1f4fa3] border border-slate-50 shrink-0">
+      <Icon size={20} />
+    </div>
+    <div>
+      <h4 className="text-lg font-black text-[#2c3e50] mb-1 italic-none">{title}</h4>
+      <p className="text-[13px] text-[#6b7280] font-medium leading-relaxed italic-none">{desc}</p>
+    </div>
   </div>
 );
 
-const FileText = ({ size }) => <BookOpen size={size} />;
-const PlayLine = ({ size }) => <Zap size={size} />;
+const FooterLinks = ({ title, links }) => (
+  <div>
+    <h4 className="text-[#2c3e50] font-black text-sm uppercase tracking-widest mb-8 italic-none">{title}</h4>
+    <ul className="space-y-4">
+      {links.map((l, i) => (
+        <li key={i}><a href="#" className="text-sm font-medium hover:text-[#1f4fa3] transition-colors italic-none">{l}</a></li>
+      ))}
+    </ul>
+  </div>
+);
+
+const CheckCircle2 = ({ size, className }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="3.5" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+);
 
 export default Home;
-
-

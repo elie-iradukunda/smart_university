@@ -1,25 +1,54 @@
 const Reservation = require('../models/Reservation');
 const Equipment = require('../models/Equipment');
 const User = require('../models/User');
+const IncubationAsset = require('../models/IncubationAsset');
 
 // Create Reservation
 exports.createReservation = async (req, res) => {
   try {
-    const { equipmentId, startDate, endDate, purpose, moduleCode } = req.body;
+    const { 
+      equipmentId, 
+      incubationAssetId, 
+      startDate, 
+      endDate, 
+      purpose, 
+      moduleCode,
+      studentRegNumber,
+      studentIdNumber,
+      studentIdImage,
+      phoneNumber,
+      level,
+      department,
+      additionalInfo
+    } = req.body;
     
-    // Check if equipment is available
-    const equipment = await Equipment.findByPk(equipmentId);
-    if (!equipment || equipment.available <= 0) {
-      return res.status(400).json({ message: 'Equipment not available' });
+    // Check if equipment or incubation asset is available
+    let item;
+    if (equipmentId) {
+      item = await Equipment.findByPk(equipmentId);
+    } else if (incubationAssetId) {
+      item = await IncubationAsset.findByPk(incubationAssetId);
+    }
+
+    if (!item || item.available <= 0) {
+      return res.status(400).json({ message: 'Item not available' });
     }
 
     const reservation = await Reservation.create({
       userId: req.user.id,
-      equipmentId,
+      equipmentId: equipmentId || null,
+      incubationAssetId: incubationAssetId || null,
       startDate,
       endDate,
       purpose,
       moduleCode,
+      studentRegNumber,
+      studentIdNumber,
+      studentIdImage,
+      phoneNumber,
+      level,
+      department,
+      additionalInfo,
       status: 'Pending'
     });
 
@@ -52,7 +81,10 @@ exports.updateReservationStatus = async (req, res) => {
   
   try {
     const reservation = await Reservation.findByPk(id, {
-        include: [{ model: Equipment, attributes: ['id', 'department', 'available'] }]
+        include: [
+          { model: Equipment, attributes: ['id', 'department', 'available'] },
+          { model: IncubationAsset, attributes: ['id', 'department', 'available'] }
+        ]
     });
 
     if (!reservation) {
@@ -60,7 +92,8 @@ exports.updateReservationStatus = async (req, res) => {
     }
 
     // Department Security Check: Store Keepers/HODs can only approve their own department's items
-    if (req.user.role !== 'Admin' && reservation.Equipment.department !== req.user.department) {
+    const itemDept = (reservation.Equipment?.department || reservation.IncubationAsset?.department);
+    if (req.user.role !== 'Admin' && req.user.role !== 'Incubation Manager' && itemDept !== req.user.department) {
         return res.status(403).json({ message: 'Unauthorized: You can only manage requests for your department.' });
     }
 
@@ -68,21 +101,21 @@ exports.updateReservationStatus = async (req, res) => {
     if (status === 'Approved') {
         reservation.approvedBy = req.user.id;
         // Decrease stock
-        const equipment = reservation.Equipment;
-        if(equipment && equipment.available > 0) {
-            equipment.available -= 1;
-            if(equipment.available === 0) equipment.status = 'In Use'; 
-            await equipment.save();
-        } else if (equipment && equipment.available <= 0) {
-            return res.status(400).json({ message: 'Equipment is no longer available in stock' });
+        const item = reservation.Equipment || reservation.IncubationAsset;
+        if(item && item.available > 0) {
+            item.available -= 1;
+            if(item.available === 0) item.status = 'In Use'; 
+            await item.save();
+        } else if (item && item.available <= 0) {
+            return res.status(400).json({ message: 'Item is no longer available in stock' });
         }
     } else if (status === 'Returned') {
         // Increase stock
-        const equipment = reservation.Equipment;
-        if(equipment) {
-            equipment.available += 1;
-            equipment.status = 'Available';
-            await equipment.save();
+        const item = reservation.Equipment || reservation.IncubationAsset;
+        if(item) {
+            item.available += 1;
+            item.status = 'Available';
+            await item.save();
         }
     }
 
@@ -109,7 +142,13 @@ exports.getAllReservations = async (req, res) => {
         { 
           model: Equipment, 
           attributes: ['id', 'name', 'category', 'image', 'department', 'serialNumber', 'assetTag', 'description', 'warrantyExpiry', 'requiresMaintenance', 'manualUrl', 'videoUrls', 'galleryImages', 'modelNumber', 'supplier', 'stock', 'location'],
-          where: Object.keys(equipmentWhere).length > 0 ? equipmentWhere : undefined
+          where: Object.keys(equipmentWhere).length > 0 ? equipmentWhere : undefined,
+          required: false
+        },
+        {
+          model: IncubationAsset,
+          attributes: ['id', 'name', 'category', 'image', 'department', 'serialNumber', 'assetTag', 'description', 'modelNumber', 'location'],
+          required: false
         },
         { model: User, attributes: ['id', 'fullName', 'email', 'studentId', 'role', 'department'] }
       ],

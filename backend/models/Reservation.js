@@ -1,7 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const User = require('./User');
-const Equipment = require('./Equipment');
 
 const Reservation = sequelize.define('Reservation', {
   id: {
@@ -12,18 +10,14 @@ const Reservation = sequelize.define('Reservation', {
   userId: {
     type: DataTypes.UUID,
     allowNull: false,
-    references: {
-      model: User,
-      key: 'id'
-    }
   },
   equipmentId: {
     type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: Equipment,
-      key: 'id'
-    }
+    allowNull: true, // Either equipment OR incubation asset
+  },
+  incubationAssetId: {
+    type: DataTypes.UUID,
+    allowNull: true,
   },
   startDate: {
     type: DataTypes.DATE,
@@ -45,13 +39,37 @@ const Reservation = sequelize.define('Reservation', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  studentRegNumber: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  studentIdNumber: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  studentIdImage: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  phoneNumber: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  level: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  department: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  additionalInfo: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
   approvedBy: {
     type: DataTypes.UUID,
     allowNull: true,
-    references: {
-      model: User,
-      key: 'id'
-    }
   },
   returnCondition: {
     type: DataTypes.STRING, // e.g., "Good", "Damaged"

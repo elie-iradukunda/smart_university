@@ -31,7 +31,7 @@ const PublicIncubation = () => {
       </nav>
 
       <div className="pt-28 pb-20 px-6 max-w-[1400px] mx-auto">
-         <IncubationDashboard />
+         <IncubationDashboard isPublic={true} />
       </div>
 
     </div>

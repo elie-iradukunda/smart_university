@@ -1,19 +1,17 @@
 import { X, Calendar, Download, Play, ChevronRight, CheckCircle, AlertCircle, Camera, Loader2, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
+import RequestFormModal from './RequestFormModal';
 
 const EquipmentDetailsModal = ({ isOpen, onClose, equipment, readOnly = false }) => {
   const [activeImage, setActiveImage] = useState(0);
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestLoading, setRequestLoading] = useState(false);
   const [requestSuccess, setRequestSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [reservationData, setReservationData] = useState({
-     startDate: new Date().toISOString().split('T')[0],
-     endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-     purpose: '',
-     moduleCode: ''
-  });
+  const navigate = useNavigate();
 
   if (!isOpen || !equipment) return null;
 
@@ -57,43 +55,12 @@ const EquipmentDetailsModal = ({ isOpen, onClose, equipment, readOnly = false })
         : null;
   };
 
-  const handleRequest = async () => {
-      if (!reservationData.purpose.trim() || !reservationData.moduleCode.trim()) {
-          setError("Please provide both the purpose and module code.");
-          return;
-      }
-      
-      setRequestLoading(true);
-      setError("");
-      try {
-          const token = localStorage.getItem('token');
-          const response = await fetch(`${API_BASE_URL}/api/reservations`, {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({
-                  equipmentId: equipment.id,
-                  ...reservationData
-              })
-          });
-
-          if (!response.ok) {
-              const data = await response.json();
-              throw new Error(data.message || 'Failed to submit request');
-          }
-
-          setRequestSuccess(true);
-          setTimeout(() => {
-              onClose();
-              setRequestSuccess(false);
-          }, 2000);
-      } catch (err) {
-          setError(err.message);
-      } finally {
-          setRequestLoading(false);
-      }
+  const handleRequestInit = () => {
+    if (!localStorage.getItem('token')) {
+      navigate('/login');
+      return;
+    }
+    setRequestModalOpen(true);
   };
 
   return (
@@ -204,71 +171,44 @@ const EquipmentDetailsModal = ({ isOpen, onClose, equipment, readOnly = false })
                           </div>
                       </div>
 
-                      {/* Specs */}
-                      <div className="mb-6">
-                          <h3 className="text-sm font-bold text-[#2c3e50] mb-2 uppercase tracking-wider text-xs">Technical Details</h3>
-                          <div className="bg-gray-50 rounded-lg border border-gray-100 divide-y divide-gray-100">
-                               <SpecRow label="Serial Number" value={equipment.serialNumber} />
-                              <SpecRow label="Asset Tag" value={equipment.assetTag} />
-                              <SpecRow label="Department" value={equipment.department} />
-                              <SpecRow label="Warranty" value={equipment.warrantyExpiry} />
-                              <SpecRow label="Maintenance Required" value={equipment.requiresMaintenance ? 'Yes' : 'No'} highlight={equipment.requiresMaintenance} />
-                              {readOnly && (
-                                  <>
-                                      <SpecRow label="Supplier" value={equipment.supplier} />
-                                      <SpecRow label="Location" value={equipment.location} />
-                                  </>
-                              )}
-                          </div>
-                      </div>
+                      {/* Specs - Only for Admin/Staff/Manager */}
+                      {(['Admin', 'HOD', 'StockManager', 'Lab Staff', 'Appointed Staff'].includes(localStorage.getItem('userRole'))) && (
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold text-[#2c3e50] mb-2 uppercase tracking-wider text-xs">Technical Details</h3>
+                            <div className="bg-gray-50 rounded-lg border border-gray-100 divide-y divide-gray-100">
+                                <SpecRow label="Serial Number" value={equipment.serialNumber} />
+                                <SpecRow label="Asset Tag" value={equipment.assetTag} />
+                                <SpecRow label="Department" value={equipment.department} />
+                                <SpecRow label="Warranty" value={equipment.warrantyExpiry} />
+                                <SpecRow label="Maintenance Required" value={equipment.requiresMaintenance ? 'Yes' : 'No'} highlight={equipment.requiresMaintenance} />
+                                {readOnly && (
+                                    <>
+                                        <SpecRow label="Supplier" value={equipment.supplier} />
+                                        <SpecRow label="Location" value={equipment.location} />
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                      )}
 
-                      {/* Borrowing Form - FOR STUDENTS */}
+                      {/* Borrowing Guidance - FOR STUDENTS */}
                       {!readOnly && equipment.status === 'Available' && (
                           <div className="mb-6 pt-6 border-t border-gray-100 space-y-4">
-                              <h3 className="text-sm font-bold text-[#2c3e50] uppercase tracking-wider text-xs">Request Borrowing</h3>
-                              <div className="grid grid-cols-2 gap-3">
-                                  <div className="space-y-1">
-                                      <label className="text-[10px] font-bold text-gray-400 uppercase">Start Date</label>
-                                      <input 
-                                          type="date" 
-                                          value={reservationData.startDate}
-                                          onChange={(e) => setReservationData(prev => ({...prev, startDate: e.target.value}))}
-                                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-xs outline-none focus:border-[#1f4fa3]" 
-                                      />
+                              <h3 className="text-sm font-bold text-[#2c3e50] uppercase tracking-wider text-xs">Access Authorization</h3>
+                              {localStorage.getItem('token') ? (
+                                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3">
+                                      <Info className="text-blue-500 shrink-0" size={18} />
+                                      <p className="text-xs text-blue-800 leading-relaxed font-medium">
+                                          This item requires a formal application including your student credentials and ID verification. Click below to start your request.
+                                      </p>
                                   </div>
-                                  <div className="space-y-1">
-                                      <label className="text-[10px] font-bold text-gray-400 uppercase">End Date</label>
-                                      <input 
-                                          type="date" 
-                                          value={reservationData.endDate}
-                                          onChange={(e) => setReservationData(prev => ({...prev, endDate: e.target.value}))}
-                                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-xs outline-none focus:border-[#1f4fa3]" 
-                                      />
+                              ) : (
+                                  <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl">
+                                      <p className="text-xs text-orange-800 font-medium">
+                                          Please <Link to="/login" className="font-bold underline">Login</Link> to apply for this equipment.
+                                      </p>
                                   </div>
-                              </div>
-                              <div className="grid grid-cols-1 gap-3">
-                                  <div className="space-y-1">
-                                      <label className="text-[10px] font-bold text-gray-400 uppercase">Module / Subject Code</label>
-                                      <input 
-                                          type="text" 
-                                          placeholder="e.g. ELEC201, ICT102..."
-                                          value={reservationData.moduleCode}
-                                          onChange={(e) => setReservationData(prev => ({...prev, moduleCode: e.target.value}))}
-                                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-xs outline-none focus:border-[#1f4fa3]" 
-                                      />
-                                  </div>
-                                  <div className="space-y-1">
-                                      <label className="text-[10px] font-bold text-gray-400 uppercase">Purpose / Course Work</label>
-                                      <textarea 
-                                          rows="2"
-                                          value={reservationData.purpose}
-                                          onChange={(e) => setReservationData(prev => ({...prev, purpose: e.target.value}))}
-                                          placeholder="e.g. For Renewable Energy Lab project..."
-                                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-xs outline-none focus:border-[#1f4fa3] resize-none"
-                                      ></textarea>
-                                  </div>
-                              </div>
-                              {error && <p className="text-[10px] text-red-500 font-medium">*{error}</p>}
+                              )}
                           </div>
                       )}
 
@@ -306,20 +246,18 @@ const EquipmentDetailsModal = ({ isOpen, onClose, equipment, readOnly = false })
                                   </div>
                               ) : (
                                   <button 
-                                     onClick={handleRequest}
-                                     disabled={equipment.status !== 'Available' || requestLoading}
+                                     onClick={handleRequestInit}
+                                     disabled={equipment.status !== 'Available'}
                                      className={`w-full py-3.5 rounded-lg text-sm font-bold transition-all shadow-lg flex items-center justify-center gap-2 ${
                                         equipment.status === 'Available' 
                                            ? 'bg-[#1f4fa3] text-white hover:bg-[#173e82] shadow-blue-900/20' 
                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
                                      }`}
                                   >
-                                      {requestLoading ? <Loader2 size={18} className="animate-spin" /> : (
-                                          equipment.status === 'Available' ? (
-                                              <><CheckCircle size={18} /> Request Equipment</>
-                                          ) : (
-                                              <><AlertCircle size={18} /> Currently Unavailable</>
-                                          )
+                                      {equipment.status === 'Available' ? (
+                                          <><Calendar size={18} /> Apply for Borrowing</>
+                                      ) : (
+                                          <><AlertCircle size={18} /> Currently Unavailable</>
                                       )}
                                   </button>
                               )}
@@ -333,6 +271,15 @@ const EquipmentDetailsModal = ({ isOpen, onClose, equipment, readOnly = false })
           </div>
         </motion.div>
       </div>
+
+      {requestModalOpen && (
+          <RequestFormModal 
+              isOpen={requestModalOpen} 
+              onClose={() => setRequestModalOpen(false)} 
+              item={equipment} 
+              type="standard" 
+          />
+      )}
     </AnimatePresence>
   );
 };

@@ -1,4 +1,4 @@
-const { SuccessStory, StartupProject, IncubationProgram, User } = require('../models');
+const { SuccessStory, StartupProject, IncubationProgram, User, IncubationAsset } = require('../models');
 
 exports.getSuccessStories = async (req, res) => {
     try {
@@ -22,9 +22,20 @@ exports.getPrograms = async (req, res) => {
     }
 };
 
+exports.getAssets = async (req, res) => {
+    try {
+        const assets = await IncubationAsset.findAll({
+            order: [['createdAt', 'DESC']]
+        });
+        res.json(assets);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching incubation assets', error: error.message });
+    }
+};
+
 exports.submitProject = async (req, res) => {
     try {
-        const { projectName, description, category, teamMembers, problemStatement, proposedSolution } = req.body;
+        const { projectName, description, category, teamMembers, problemStatement, proposedSolution, programId, documentUrl, externalLink } = req.body;
         
         const project = await StartupProject.create({
             projectName,
@@ -33,6 +44,9 @@ exports.submitProject = async (req, res) => {
             teamMembers,
             problemStatement,
             proposedSolution,
+            programId,
+            documentUrl,
+            externalLink,
             userId: req.user.id,
             status: 'Pending'
         });
@@ -145,5 +159,38 @@ exports.updateProjectStatus = async (req, res) => {
         res.json(project);
     } catch (error) {
         res.status(500).json({ message: 'Error updating project status', error: error.message });
+    }
+};
+
+exports.createAsset = async (req, res) => {
+    try {
+        const asset = await IncubationAsset.create(req.body);
+        res.status(201).json(asset);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating incubation asset', error: error.message });
+    }
+};
+
+exports.updateAsset = async (req, res) => {
+    try {
+        const asset = await IncubationAsset.findByPk(req.params.id);
+        if (!asset) return res.status(404).json({ message: 'Asset not found' });
+        
+        await asset.update(req.body);
+        res.json(asset);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating incubation asset', error: error.message });
+    }
+};
+
+exports.deleteAsset = async (req, res) => {
+    try {
+        const asset = await IncubationAsset.findByPk(req.params.id);
+        if (!asset) return res.status(404).json({ message: 'Asset not found' });
+        
+        await asset.destroy();
+        res.json({ message: 'Asset deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting incubation asset', error: error.message });
     }
 };

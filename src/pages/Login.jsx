@@ -67,12 +67,12 @@ const Login = () => {
         {/* Left Side - Form */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
           <div className="mb-8">
-             <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-[#1f4fa3] rounded-md flex items-center justify-center">
+             <Link to="/" className="flex items-center gap-2 mb-2 group">
+                <div className="w-8 h-8 bg-[#1f4fa3] rounded-md flex items-center justify-center group-hover:scale-105 transition-transform">
                    <Briefcase size={18} className="text-white" />
                 </div>
                 <h1 className="text-xl font-bold tracking-tight text-[#1f4fa3] uppercase leading-none">Smart <span className="text-[#60a5fa]">Uni</span></h1>
-             </div>
+             </Link>
              <h2 className="text-2xl font-bold text-[#2c3e50]">{isLogin ? "Welcome Back" : "Create Account"}</h2>
              <p className="text-sm text-[#6b7280] mt-1">
                 {isLogin ? "Enter your credentials to access your account." : "Join the university platform today."}

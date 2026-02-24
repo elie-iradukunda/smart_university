@@ -31,8 +31,28 @@ const IncubationProgram = sequelize.define('IncubationProgram', {
     type: DataTypes.ENUM('Active', 'Closed', 'Upcoming'),
     defaultValue: 'Active',
   },
+  type: {
+    type: DataTypes.ENUM('Program', 'Event'),
+    defaultValue: 'Program',
+  },
+  date: {
+    type: DataTypes.STRING, // Can be date or string like "Next Friday"
+    allowNull: true,
+  },
+  location: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  speaker: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   benefits: {
     type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  image: {
+    type: DataTypes.STRING,
     allowNull: true,
   }
 }, {

@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const User = require('./User'); // Assuming reference to submitter
 
 const StartupProject = sequelize.define('StartupProject', {
   id: {
@@ -38,13 +37,22 @@ const StartupProject = sequelize.define('StartupProject', {
   },
   filesUrl: {
     type: DataTypes.STRING,
-    allowNull: true, // A link or placeholder to project files
+    allowNull: true,
+  },
+  documentUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  externalLink: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  programId: {
+    type: DataTypes.UUID,
+    allowNull: true,
   }
 }, {
   timestamps: true,
 });
-
-StartupProject.belongsTo(User, { as: 'Submitter', foreignKey: 'userId' });
-User.hasMany(StartupProject, { foreignKey: 'userId' });
 
 module.exports = StartupProject;

@@ -1,6 +1,7 @@
 import { 
-  Calendar, CheckCircle, AlertCircle, Trash2, Check, X, Loader2, User, Package
+  Calendar, CheckCircle, AlertCircle, Trash2, Check, X, Loader2, User, Package, FileText, MapPin, Info, Image as ImageIcon, Phone, PackageSearch
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import API_BASE_URL from '../config/api';
 import EquipmentDetailsModal from "../components/EquipmentDetailsModal";
@@ -11,6 +12,7 @@ const Reservations = () => {
     const [error, setError] = useState("");
     const [actionLoading, setActionLoading] = useState(null);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [viewingApplication, setViewingApplication] = useState(null);
     const [user, setUser] = useState(null);
 
     useEffect(() => {
@@ -118,8 +120,8 @@ const Reservations = () => {
                             <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col md:flex-row">
                                 {/* Equipment Image */}
                                 <div className="md:w-48 h-32 md:h-auto relative bg-gray-50 border-r border-gray-100 shrink-0 flex items-center justify-center">
-                                    {item.Equipment?.image ? (
-                                        <img src={item.Equipment.image} className="w-full h-full object-cover" />
+                                    {(item.Equipment?.image || item.IncubationAsset?.image) ? (
+                                        <img src={item.Equipment?.image || item.IncubationAsset?.image} className="w-full h-full object-cover" />
                                     ) : (
                                         <Package className="text-gray-300" size={32} />
                                     )}
@@ -131,9 +133,9 @@ const Reservations = () => {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <span className="text-[10px] font-bold text-[#1f4fa3] bg-[#1f4fa3]/5 px-2 py-0.5 rounded uppercase tracking-wider">
-                                                    {item.Equipment?.category}
+                                                    {item.Equipment?.category || item.IncubationAsset?.category}
                                                 </span>
-                                                <h3 className="text-base font-bold text-[#2c3e50] mt-1">{item.Equipment?.name}</h3>
+                                                <h3 className="text-base font-bold text-[#2c3e50] mt-1">{item.Equipment?.name || item.IncubationAsset?.name}</h3>
                                             </div>
                                             <span className={`px-2.5 py-1 text-[10px] font-bold border rounded-md ${getStatusStyle(item.status)}`}>
                                                 {item.status.toUpperCase()}
@@ -175,12 +177,20 @@ const Reservations = () => {
                                                 </div>
                                             </div>
                                             
-                                            <button 
-                                                onClick={() => setSelectedItem(item.Equipment)}
-                                                className="flex items-center gap-2 text-[10px] font-bold text-[#1f4fa3] hover:underline"
-                                            >
-                                                <Package size={12} /> View Full Specifications & Media
-                                            </button>
+                                            <div className="flex gap-4">
+                                                <button 
+                                                    onClick={() => setSelectedItem(item.Equipment || item.IncubationAsset)}
+                                                    className="flex items-center gap-2 text-[10px] font-bold text-[#1f4fa3] hover:underline"
+                                                >
+                                                    <Package size={12} /> View Specifications
+                                                </button>
+                                                <button 
+                                                    onClick={() => setViewingApplication(item)}
+                                                    className="flex items-center gap-2 text-[10px] font-bold text-emerald-600 hover:underline"
+                                                >
+                                                    <FileText size={12} /> View Student Application
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -234,6 +244,151 @@ const Reservations = () => {
                equipment={selectedItem}
                readOnly={true}
             />
+
+            {/* Application Detail View */}
+            <AnimatePresence>
+                {viewingApplication && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]"
+                    >
+                    <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                            <FileText size={24} />
+                            </div>
+                            <div>
+                            <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">Formal Asset Application</h2>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">Review student credentials and requirements</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setViewingApplication(null)} className="p-2 hover:bg-slate-200 rounded-full transition text-slate-400">
+                            <X size={24} />
+                        </button>
+                    </div>
+
+                    <div className="p-8 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="md:col-span-2 space-y-8">
+                            {/* Identity Section */}
+                            <div className="grid grid-cols-2 gap-6">
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Full Name</span>
+                                <span className="text-lg font-bold text-slate-800">{viewingApplication.User?.fullName}</span>
+                            </div>
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Reg Number</span>
+                                <span className="text-lg font-bold text-slate-800">{viewingApplication.studentRegNumber || viewingApplication.User?.studentId}</span>
+                            </div>
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Phone Number</span>
+                                <span className="text-lg font-bold text-slate-800">{viewingApplication.phoneNumber || 'N/A'}</span>
+                            </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-6">
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Education Level</span>
+                                <span className="font-bold text-slate-700">{viewingApplication.level || 'N/A'}</span>
+                            </div>
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Department</span>
+                                <span className="font-bold text-slate-700">{viewingApplication.department || viewingApplication.User?.department}</span>
+                            </div>
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">National ID No</span>
+                                <span className="font-bold text-slate-700">{viewingApplication.studentIdNumber || 'N/A'}</span>
+                            </div>
+                            </div>
+
+                            {/* Usage Context */}
+                            <div className="space-y-4">
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    <MapPin size={12} className="text-blue-500" /> Reason for Request
+                                </h4>
+                                <div className="p-5 bg-white border border-slate-200 rounded-2xl text-sm text-slate-600 leading-relaxed shadow-sm italic">
+                                    "{viewingApplication.purpose}"
+                                </div>
+                            </div>
+                            {viewingApplication.additionalInfo && (
+                                <div>
+                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                        <Info size={12} className="text-slate-400" /> Additional Context
+                                    </h4>
+                                    <p className="text-sm text-slate-500 px-1">{viewingApplication.additionalInfo}</p>
+                                </div>
+                            )}
+                            </div>
+                        </div>
+
+                        {/* Verification & Asset Section */}
+                        <div className="space-y-6">
+                            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                            <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-3">Target Resource</h4>
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-white rounded-xl border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+                                    <PackageSearch size={24} />
+                                </div>
+                                <div>
+                                    <div className="font-bold text-slate-800">{viewingApplication.Equipment?.name || viewingApplication.IncubationAsset?.name}</div>
+                                    <div className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter">{viewingApplication.Equipment?.category || viewingApplication.IncubationAsset?.category}</div>
+                                </div>
+                            </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Identity Upload</h4>
+                            <div className="aspect-[4/3] rounded-2xl overflow-hidden border-2 border-slate-200 border-dashed bg-slate-50 group relative">
+                                {viewingApplication.studentIdImage ? (
+                                    <img src={viewingApplication.studentIdImage} className="w-full h-full object-cover" alt="Student ID" />
+                                ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                                        <ImageIcon size={48} />
+                                        <span className="text-[9px] font-bold uppercase mt-2">No Image Provided</span>
+                                    </div>
+                                )}
+                                <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-md p-3 text-white text-[10px] font-bold text-center">
+                                    Uploaded Identity Proof
+                                </div>
+                            </div>
+                            </div>
+
+                            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Pickup</span>
+                                <span className="text-sm font-bold text-slate-700">{new Date(viewingApplication.startDate).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Deadline</span>
+                                <span className="text-sm font-bold text-red-600">{new Date(viewingApplication.endDate).toLocaleDateString()}</span>
+                            </div>
+                            </div>
+
+                            {viewingApplication.status === 'Pending' && (
+                            <div className="pt-4 flex flex-col gap-3">
+                                <button 
+                                    onClick={() => { handleAction(viewingApplication.id, 'Approved'); setViewingApplication(null); }}
+                                    className="w-full py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-500/20 text-sm"
+                                >
+                                    Verify & Approve
+                                </button>
+                                <button 
+                                    onClick={() => { handleAction(viewingApplication.id, 'Cancelled'); setViewingApplication(null); }}
+                                    className="w-full py-3 bg-white border border-red-200 text-red-600 rounded-2xl font-bold hover:bg-red-50 transition text-sm"
+                                >
+                                    Reject Application
+                                </button>
+                            </div>
+                            )}
+                        </div>
+                    </div>
+                    </motion.div>
+                </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

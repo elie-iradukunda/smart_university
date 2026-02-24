@@ -16,38 +16,43 @@ import IncubationPrograms from './IncubationPrograms';
 import ResourcesStore from './ResourcesStore';
 import ManageIncubation from './ManageIncubation';
 
-const IncubationDashboard = () => {
+const IncubationDashboard = ({ isPublic = false }) => {
   const userRole = localStorage.getItem('userRole') || 'Student';
-  const [activeTab, setActiveTab] = useState(['Incubation Manager', 'Admin'].includes(userRole) ? 'manage' : 'overview');
+  const initialTab = isPublic ? 'overview' : (['Incubation Manager', 'Admin'].includes(userRole) ? 'manage' : 'overview');
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const tabs = [
     { id: 'overview', label: 'Dashboard', icon: Rocket },
     { id: 'success', label: 'Success Stories', icon: Trophy },
     { id: 'programs', label: 'Programs & Events', icon: Calendar },
     { id: 'resources', label: 'Resources & Store', icon: Store },
-    { id: 'submit', label: 'Submit Idea', icon: Lightbulb },
   ];
 
-  if (['Incubation Manager', 'Admin'].includes(userRole)) {
-    tabs.push({ id: 'manage', label: 'Manage Center', icon: FileText });
+  if (!isPublic) {
+    tabs.push(
+      { id: 'submit', label: 'Submit Idea', icon: Lightbulb }
+    );
+    if (['Incubation Manager', 'Admin'].includes(userRole)) {
+      tabs.push({ id: 'manage', label: 'Manage Center', icon: FileText });
+    }
   }
 
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <IncubationOverview setActiveTab={setActiveTab} />;
+        return <IncubationOverview setActiveTab={setActiveTab} isPublic={isPublic} />;
       case 'success':
         return <SuccessStories />;
       case 'programs':
-        return <IncubationPrograms />;
+        return <IncubationPrograms isPublic={isPublic} />;
       case 'resources':
-        return <ResourcesStore />;
+        return <ResourcesStore isPublic={isPublic} />;
       case 'submit':
         return <SubmitIdea />;
       case 'manage':
         return <ManageIncubation />;
       default:
-        return <IncubationOverview setActiveTab={setActiveTab} />;
+        return <IncubationOverview setActiveTab={setActiveTab} isPublic={isPublic} />;
     }
   };
 
@@ -62,15 +67,17 @@ const IncubationDashboard = () => {
           </h1>
           <p className="text-slate-500 mt-1">Transforming innovative ideas into successful startups</p>
         </div>
-        <div className="flex items-center gap-3">
-           <button 
-             onClick={() => setActiveTab('submit')}
-             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium shadow-sm"
-           >
-             <Lightbulb size={18} />
-             Submit Startup Idea
-           </button>
-        </div>
+        {!isPublic && (
+          <div className="flex items-center gap-3">
+             <button 
+               onClick={() => setActiveTab('submit')}
+               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium shadow-sm"
+             >
+               <Lightbulb size={18} />
+               Submit Startup Idea
+             </button>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}

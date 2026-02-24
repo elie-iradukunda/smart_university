@@ -1,7 +1,8 @@
 import React from 'react';
 import { Sparkles, TrendingUp, Users, Target, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-const IncubationOverview = ({ setActiveTab }) => {
+const IncubationOverview = ({ setActiveTab, isPublic }) => {
   return (
     <div className="space-y-6">
       {/* Hero Section */}
@@ -34,12 +35,21 @@ const IncubationOverview = ({ setActiveTab }) => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4">
-            <button 
-              onClick={() => setActiveTab('submit')}
-              className="px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 text-lg"
-            >
-              Start Your Journey <ArrowRight size={20} />
-            </button>
+            {!isPublic ? (
+              <button 
+                onClick={() => setActiveTab('submit')}
+                className="px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 text-lg"
+              >
+                Start Your Journey <ArrowRight size={20} />
+              </button>
+            ) : (
+              <Link 
+                to="/login"
+                className="px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2 text-lg"
+              >
+                Join Platform <ArrowRight size={20} />
+              </Link>
+            )}
             <button 
               onClick={() => setActiveTab('success')}
               className="px-8 py-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold backdrop-blur-sm border border-white/10 transition-all flex items-center justify-center gap-2 text-lg"
