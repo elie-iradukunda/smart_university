@@ -63,7 +63,7 @@ app.use('/api/home-images', require('./routes/homeImageRoutes'));
 const PORT = process.env.PORT || 5000;
 
 // Connect to Database and Sync Models
-sequelize.sync()
+sequelize.sync({ alter: true })
   .then(() => {
     console.log('Database synced');
     app.listen(PORT, '0.0.0.0', () => {
