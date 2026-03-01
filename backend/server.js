@@ -56,6 +56,9 @@ app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/resources', require('./routes/resourceRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/incubation', require('./routes/incubationRoutes'));
+app.use('/api/requests', require('./routes/equipmentRequestRoutes'));
+app.use('/api/lab-assignments', require('./routes/labAssignmentRoutes'));
+app.use('/api/home-images', require('./routes/homeImageRoutes'));
 
 const PORT = process.env.PORT || 5000;
 

@@ -1,9 +1,14 @@
 const Reservation = require('../models/Reservation');
 const Equipment = require('../models/Equipment');
 const User = require('../models/User');
-const { Op } = require('sequelize');
-
 const Resource = require('../models/Resource');
+const SuccessStory = require('../models/SuccessStory');
+const IncubationProgram = require('../models/IncubationProgram');
+const LabAssignment = require('../models/LabAssignment');
+const StartupProject = require('../models/StartupProject');
+const sequelize = require('../config/db');
+const { Op } = require('sequelize');
+const ExcelJS = require('exceljs');
 
 exports.getStats = async (req, res) => {
     try {
@@ -137,22 +142,192 @@ exports.getReports = async (req, res) => {
         const totalEquipment = await Equipment.count();
         const activeLoans = await Reservation.count({ where: { status: 'Borrowed' } });
         const pendingRequests = await Reservation.count({ where: { status: 'Pending' } });
+        
+        // 5. Top 5 High-Demand Equipment
+        const topEquipmentRaw = await Reservation.findAll({
+            attributes: [
+                'equipmentId',
+                [sequelize.fn('COUNT', sequelize.col('equipmentId')), 'borrow_count']
+            ],
+            group: ['equipmentId'],
+            order: [[sequelize.literal('borrow_count'), 'DESC']],
+            limit: 5,
+            include: [{ model: Equipment, attributes: ['name', 'category'] }]
+        });
+
+        const topEquipment = topEquipmentRaw.map(item => ({
+            name: item.Equipment?.name || 'Unknown',
+            category: item.Equipment?.category || 'General',
+            count: parseInt(item.getDataValue('borrow_count'))
+        }));
+
+        // 6. Detailed Status Distribution
+        const allStatuses = ['Pending', 'Approved', 'Borrowed', 'Returned', 'Cancelled', 'Overdue'];
+        const statusDistribution = await Promise.all(allStatuses.map(async (status) => {
+           const count = await Reservation.count({ where: { status } });
+           return { name: status, value: count };
+        }));
 
         res.json({
             weeklyActivity,
             deptDistribution,
             roleDistribution,
+            topEquipment,
+            statusDistribution,
             stats: {
                 totalUsers,
                 totalEquipment,
                 activeLoans,
                 pendingRequests,
-                returnRate: "94.2%", // Mocked or calculated from total vs overdue
-                avgUsage: "5h 25m"
+                returnRate: "94.2%", 
+                avgUsage: "5h 25m",
+                totalReservations: await Reservation.count()
             }
         });
 
     } catch (error) {
         res.status(500).json({ message: 'Error generating reports', error: error.message });
+    }
+};
+
+// EXCEL EXPORT - COMPREHENSIVE PLATFORM DATA
+exports.exportExcelReport = async (req, res) => {
+    try {
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Smart University Admin';
+        workbook.lastModifiedBy = 'Smart University Admin';
+        workbook.created = new Date();
+
+        const today = new Date();
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+        // ---------------------------------------------------------
+        // SHEET 1: SUMMARY & KPIS
+        // ---------------------------------------------------------
+        const summarySheet = workbook.addWorksheet('Overview Summary');
+        summarySheet.columns = [
+            { header: 'Metric', key: 'metric', width: 30 },
+            { header: 'Value', key: 'value', width: 20 }
+        ];
+        
+        const counts = {
+            users: await User.count(),
+            equipment: await Equipment.count(),
+            reservations: await Reservation.count(),
+            programs: await IncubationProgram.count(),
+            stories: await SuccessStory.count(),
+            newUsersThisMonth: await User.count({ where: { createdAt: { [Op.gte]: startOfMonth } } }),
+            borrowedThisMonth: await Reservation.count({ where: { status: 'Borrowed', createdAt: { [Op.gte]: startOfMonth } } })
+        };
+
+        summarySheet.addRows([
+            { metric: 'Report Generated At', value: today.toLocaleString() },
+            { metric: 'Total Registered Users', value: counts.users },
+            { metric: 'Total Lab Equipment', value: counts.equipment },
+            { metric: 'Total Reservations to Date', value: counts.reservations },
+            { metric: 'Active Incubation Programs', value: counts.programs },
+            { metric: 'Student Success Stories', value: counts.stories },
+            { metric: 'New Users This Month', value: counts.newUsersThisMonth },
+            { metric: 'Equipment Borrowed This Month', value: counts.borrowedThisMonth }
+        ]);
+
+        // Style header
+        summarySheet.getRow(1).font = { bold: true, size: 12 };
+        summarySheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+
+        // ---------------------------------------------------------
+        // SHEET 2: ALL USERS
+        // ---------------------------------------------------------
+        const usersSheet = workbook.addWorksheet('User Directory');
+        const users = await User.findAll({ order: [['createdAt', 'DESC']] });
+        usersSheet.columns = [
+            { header: 'Full Name', key: 'fullName', width: 25 },
+            { header: 'Email', key: 'email', width: 30 },
+            { header: 'Role', key: 'role', width: 15 },
+            { header: 'Department', key: 'department', width: 20 },
+            { header: 'Student ID', key: 'studentId', width: 15 },
+            { header: 'Registered On', key: 'createdAt', width: 20 }
+        ];
+        users.forEach(u => usersSheet.addRow({
+            fullName: u.fullName,
+            email: u.email,
+            role: u.role,
+            department: u.department,
+            studentId: u.studentId,
+            createdAt: u.createdAt.toLocaleDateString()
+        }));
+        usersSheet.getRow(1).font = { bold: true };
+
+        // ---------------------------------------------------------
+        // SHEET 3: EQUIPMENT INVENTORY
+        // ---------------------------------------------------------
+        const equipSheet = workbook.addWorksheet('Equipment Inventory');
+        const equipment = await Equipment.findAll({ order: [['name', 'ASC']] });
+        equipSheet.columns = [
+            { header: 'Name', key: 'name', width: 30 },
+            { header: 'Category', key: 'category', width: 20 },
+            { header: 'Department', key: 'department', width: 25 },
+            { header: 'Total Qty', key: 'quantity', width: 10 },
+            { header: 'Available', key: 'available', width: 10 },
+            { header: 'Condition', key: 'condition', width: 15 }
+        ];
+        equipment.forEach(e => equipSheet.addRow(e));
+        equipSheet.getRow(1).font = { bold: true };
+
+        // ---------------------------------------------------------
+        // SHEET 4: RECENT BORROWING (THIS MONTH)
+        // ---------------------------------------------------------
+        const borrowSheet = workbook.addWorksheet('Monthly Borrowing');
+        const recentReservations = await Reservation.findAll({
+            where: { createdAt: { [Op.gte]: startOfMonth } },
+            include: [
+                { model: User, attributes: ['fullName', 'email'] },
+                { model: Equipment, attributes: ['name'] }
+            ]
+        });
+        borrowSheet.columns = [
+            { header: 'Student', key: 'student', width: 25 },
+            { header: 'Equipment', key: 'equipment', width: 25 },
+            { header: 'Status', key: 'status', width: 15 },
+            { header: 'Date Borrowed', key: 'date', width: 20 },
+            { header: 'Return Deadline', key: 'deadline', width: 20 }
+        ];
+        recentReservations.forEach(r => borrowSheet.addRow({
+            student: r.User?.fullName,
+            equipment: r.Equipment?.name,
+            status: r.status,
+            date: r.startDate ? new Date(r.startDate).toLocaleDateString() : 'N/A',
+            deadline: r.endDate ? new Date(r.endDate).toLocaleDateString() : 'N/A'
+        }));
+        borrowSheet.getRow(1).font = { bold: true };
+
+        // ---------------------------------------------------------
+        // SHEET 5: INCUBATION & SUCCESS
+        // ---------------------------------------------------------
+        const incubationSheet = workbook.addWorksheet('Incubation & Stories');
+        const programs = await IncubationProgram.findAll();
+        const stories = await SuccessStory.findAll();
+
+        incubationSheet.addRow(['--- ACTIVE PROGRAMS ---']).font = { bold: true };
+        incubationSheet.addRow(['Name', 'Type', 'Deadline', 'Status']);
+        programs.forEach(p => incubationSheet.addRow([p.name, p.type, p.applicationDeadline || 'Rolling', p.status]));
+        
+        incubationSheet.addRow([]); 
+        incubationSheet.addRow(['--- SUCCESS STORIES ---']).font = { bold: true };
+        incubationSheet.addRow(['Title', 'Author', 'Category', 'Date']);
+        stories.forEach(s => incubationSheet.addRow([s.title, s.studentName, s.category, s.createdAt.toLocaleDateString()]));
+
+        // ---------------------------------------------------------
+        // EXPORT DATA
+        // ---------------------------------------------------------
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=Smart_University_Audit_Report.xlsx');
+        
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        console.error("Excel Export Error:", error);
+        res.status(500).json({ message: 'Excel generation failed', error: error.message });
     }
 };

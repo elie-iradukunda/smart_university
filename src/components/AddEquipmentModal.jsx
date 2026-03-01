@@ -55,6 +55,19 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
     }
   }, [editData, isOpen, user]);
 
+  const tabs = [
+    { id: 'basic', label: 'Basic Info', icon: Database, restrict: ['Admin', 'StockManager', 'Lab Staff', 'HOD'] },
+    { id: 'media', label: 'Media & Docs', icon: ImageIcon, restrict: ['Admin', 'Lab Staff','HOD'] },
+    { id: 'inventory', label: 'Inventory & Value', icon: DollarSign, restrict: ['Admin', 'StockManager','HOD'] },
+    { id: 'settings', label: 'Policy & Status', icon: Settings, restrict: ['Admin', 'StockManager', 'Lab Staff','HOD'] }
+  ].filter(tab => !tab.restrict || tab.restrict.includes(user?.role));
+
+  useEffect(() => {
+     if (tabs.length > 0 && !tabs.find(t => t.id === activeTab)) {
+         setActiveTab(tabs[0].id);
+     }
+  }, [user, activeTab, tabs.length]);
+
   if (!isOpen) return null;
 
   const handleChange = (e) => {
@@ -129,9 +142,12 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
      setLoading(true);
      try {
         const token = localStorage.getItem('token');
-        // Filter out empty strings from arrays
+        // Filter out empty strings from arrays and convert empty strings to null for optional DB numeric/date fields
         const cleanData = {
            ...formData,
+           cost: formData.cost === '' ? null : formData.cost,
+           purchaseDate: formData.purchaseDate === '' ? null : formData.purchaseDate,
+           warrantyExpiry: formData.warrantyExpiry === '' ? null : formData.warrantyExpiry,
            videoUrls: formData.videoUrls.filter(url => url.trim() !== ''),
            galleryImages: formData.galleryImages.filter(url => url.trim() !== '')
         };
@@ -156,7 +172,7 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
             throw new Error(error.message || `Failed to ${editData ? 'update' : 'create'} equipment`);
         }
         
-        onClose();
+        onClose(true, `Successfully ${editData ? 'updated' : 'registered'} ${formData.name}`);
      } catch (error) {
         console.error(error);
         alert(error.message);
@@ -164,13 +180,6 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
         setLoading(false);
      }
   };
-
-  const tabs = [
-    { id: 'basic', label: 'Basic Info', icon: Database },
-    { id: 'media', label: 'Media & Docs', icon: ImageIcon },
-    { id: 'inventory', label: 'Inventory & Value', icon: DollarSign },
-    { id: 'settings', label: 'Policy & Status', icon: Settings }
-  ];
 
   return (
     <AnimatePresence>
@@ -216,12 +225,15 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
             {/* Form Content */}
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8 bg-white">
                
-               {activeTab === 'basic' && (
-                  <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                     <SectionHeader title="Identification Details" subtitle="Unique codes and descriptive information." />
+               {activeTab === 'basic' && (() => {
+                  // HOD and Lab Staff cannot edit core specs set by StockManager
+                  const isSpecLocked = editData && (user?.role === 'HOD' || user?.role === 'Lab Staff');
+                  return (
+                   <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                      <SectionHeader title="Identification Details" subtitle={isSpecLocked ? 'Core specifications are locked. You can edit description below.' : 'Unique codes and descriptive information.'} />
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <InputGroup label="Equipment Name" name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Solar PV Training System" required />
-                        <InputGroup label="Model Number" name="modelNumber" value={formData.modelNumber} onChange={handleChange} placeholder="SUN-TRAIN-01" />
+                        <InputGroup label="Equipment Name" name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Solar PV Training System" required disabled={isSpecLocked} />
+                        <InputGroup label="Model Number" name="modelNumber" value={formData.modelNumber} onChange={handleChange} placeholder="SUN-TRAIN-01" disabled={isSpecLocked} />
                         
                         <InputGroup 
                            label="Category" 
@@ -230,6 +242,7 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
                            onChange={handleChange} 
                            placeholder="e.g. Robotics, Automation, Lab Kits..." 
                            required 
+                           disabled={isSpecLocked}
                         />
                         
                         <SelectGroup 
@@ -237,7 +250,7 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
                            name="department" 
                            value={formData.department} 
                            onChange={handleChange}
-                           disabled={user?.role !== 'Admin'}
+                           disabled={user?.role !== 'Admin' && user?.role !== 'StockManager'}
                         >
                            <option>Mechanical Engineering</option>
                            <option>ICT Division</option>
@@ -247,23 +260,26 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
                            <option>Automation</option>
                         </SelectGroup>
 
-                        <InputGroup label="Serial Number" name="serialNumber" value={formData.serialNumber} onChange={handleChange} placeholder="SN-10293845" />
-                        <InputGroup label="Asset Tag ID" name="assetTag" value={formData.assetTag} onChange={handleChange} placeholder="TAG-SOL-001" />
+                        <InputGroup label="Serial Number" name="serialNumber" value={formData.serialNumber} onChange={handleChange} placeholder="SN-10293845" disabled={isSpecLocked} />
+                        <InputGroup label="Asset Tag ID" name="assetTag" value={formData.assetTag} onChange={handleChange} placeholder="TAG-SOL-001" disabled={isSpecLocked} />
                         
-                        <div className="md:col-span-2">
-                           <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Detailed Description</label>
-                           <textarea 
-                              name="description"
-                              value={formData.description}
-                              onChange={handleChange}
-                              rows="4" 
-                              placeholder="Technical specifications, key features and usage instructions..."
-                              className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl text-sm text-[#2c3e50] focus:bg-white focus:border-[#1f4fa3] transition-all resize-none outline-none ring-offset-2"
-                           ></textarea>
-                        </div>
+                        {(user?.role === 'Admin' || user?.role === 'Lab Staff' || user?.role === 'HOD') && (
+                            <div className="md:col-span-2">
+                               <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Detailed Description</label>
+                               <textarea 
+                                  name="description"
+                                  value={formData.description}
+                                  onChange={handleChange}
+                                  rows="4" 
+                                  placeholder="Technical specifications, key features and usage instructions..."
+                                  className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl text-sm text-[#2c3e50] focus:bg-white focus:border-[#1f4fa3] transition-all resize-none outline-none ring-offset-2"
+                               ></textarea>
+                            </div>
+                        )}
                      </div>
                   </motion.div>
-               )}
+                  );
+                })()}
 
                {activeTab === 'media' && (
                   <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6 text-sm">
@@ -362,9 +378,7 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
                         <InputGroup label="Stock Level (Total)" name="stock" type="number" value={formData.stock} onChange={handleChange} icon={Database} min="1" />
                         <InputGroup label="Initially Available" name="available" type="number" value={formData.available} onChange={handleChange} icon={Activity} min="0" />
                         
-                        <div className="md:col-span-2">
-                           <InputGroup label="Physical Storage Location" name="location" value={formData.location} onChange={handleChange} placeholder="e.g. Lab 03, Shelf B-12" icon={MapPin} />
-                        </div>
+                        <div className="hidden md:block"></div>
 
                         <InputGroup label="Purchase Cost (USD)" name="cost" type="number" value={formData.cost} onChange={handleChange} placeholder="0.00" icon={DollarSign} />
                         <SelectGroup label="Preferred Supplier" name="supplier" value={formData.supplier} onChange={handleChange}>
@@ -383,12 +397,18 @@ const AddEquipmentModal = ({ isOpen, onClose, editData = null }) => {
                   <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                      <SectionHeader title="Access Policies & Status" subtitle="Set borrowing rules and current condition." />
                      
+                     <div className="md:col-span-2 pb-6 border-b border-gray-50">
+                        <InputGroup label="Physical Storage Location" name="location" value={formData.location} onChange={handleChange} placeholder="e.g. Lab 03, Shelf B-12" icon={MapPin} />
+                     </div>
+                     
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-gray-50">
                         <SelectGroup label="Current Item Condition" name="status" value={formData.status} onChange={handleChange}>
                            <option>Available</option>
-                           <option>Maintenance</option>
-                           <option>Retired</option>
                            <option>In Use</option>
+                           <option>Maintenance</option>
+                           <option>Pending Lab Verification</option>
+                           <option>Lost</option>
+                           <option>Retired</option>
                         </SelectGroup>
                         <div className="hidden md:block"></div>
                      </div>
@@ -444,7 +464,7 @@ const SectionHeader = ({ title, subtitle }) => (
    </div>
 );
 
-const InputGroup = ({ label, placeholder, type = "text", name, value, onChange, icon: Icon, required, min, onFileChange, isUploading }) => {
+const InputGroup = ({ label, placeholder, type = "text", name, value, onChange, icon: Icon, required, min, onFileChange, isUploading, disabled }) => {
   const fileInputId = `file-upload-${name || Math.random().toString(36).substr(2, 9)}`;
   
   return (
@@ -460,7 +480,8 @@ const InputGroup = ({ label, placeholder, type = "text", name, value, onChange, 
                 placeholder={placeholder}
                 required={required}
                 min={min}
-                className={`w-full ${Icon ? 'pl-11' : 'px-4'} pr-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl text-[13px] text-[#2c3e50] placeholder:text-gray-300 focus:bg-white focus:border-[#1f4fa3] transition-all outline-none`}
+                disabled={disabled}
+                className={`w-full ${Icon ? 'pl-11' : 'px-4'} pr-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl text-[13px] text-[#2c3e50] placeholder:text-gray-300 focus:bg-white focus:border-[#1f4fa3] transition-all outline-none ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
              />
              {Icon && <Icon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#1f4fa3] transition-colors" />}
           </div>

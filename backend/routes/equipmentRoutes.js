@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllEquipment, createEquipment, updateEquipment, deleteEquipment } = require('../controllers/equipmentController');
+const { getAllEquipment, createEquipment, updateEquipment, deleteEquipment, verifyEquipment } = require('../controllers/equipmentController');
 const { auth, authorize } = require('../middleware/authMiddleware');
 
 router.get('/', (req, res, next) => {
@@ -13,6 +13,7 @@ router.get('/', (req, res, next) => {
 }, getAllEquipment);
 router.post('/', auth, authorize(['Admin', 'HOD', 'StockManager', 'Lab Staff']), createEquipment);
 router.put('/:id', auth, authorize(['Admin', 'HOD', 'StockManager', 'Lab Staff']), updateEquipment);
+router.put('/:id/verify', auth, authorize(['Admin', 'HOD', 'Lab Staff']), verifyEquipment);
 router.delete('/:id', auth, authorize(['Admin']), deleteEquipment);
 
 module.exports = router;

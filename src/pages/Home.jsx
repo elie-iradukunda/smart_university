@@ -29,12 +29,7 @@ import EquipmentDetailsModal from '../components/EquipmentDetailsModal';
 import ResourceDetailsModal from '../components/ResourceDetailsModal';
 
 const Home = () => {
-  const [dashStats, setDashStats] = useState({
-    totalEquipment: '0',
-    activeStudents: '0',
-    totalResources: '0',
-    campusLabs: '12'
-  });
+
 
   const [equipment, setEquipment] = useState([]);
   const [learning, setLearning] = useState([]);
@@ -47,30 +42,32 @@ const Home = () => {
   const [selectedResource, setSelectedResource] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const heroImages = [
-    "https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?auto=format&fit=crop&q=80&w=1200", // Lab Tech
-    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=1200", // Workspace
-    "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80&w=1200", // Students
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200", // Modern Office
-    "https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0?auto=format&fit=crop&q=80&w=1200"  // Engineering
-  ];
+  const [heroImages, setHeroImages] = useState([
+    "/images/tumba2.jpg",
+    "/images/tumba3.jpg",
+    "/images/tuuu.jpg",
+  ]);
 
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [statsRes, equipRes, learnRes, storyRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/dashboard/stats`).then(r => r.json()),
+        const [equipRes, learnRes, storyRes, imageRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/equipment?limit=4`).then(r => r.json()),
           fetch(`${API_BASE_URL}/api/resources`).then(r => r.json()),
-          fetch(`${API_BASE_URL}/api/incubation/stories`).then(r => r.json())
+          fetch(`${API_BASE_URL}/api/incubation/stories`).then(r => r.json()),
+          fetch(`${API_BASE_URL}/api/home-images`).then(r => r.json())
         ]);
 
-        setDashStats({
-          totalEquipment: statsRes.totalEquipment?.toLocaleString() || '0',
-          activeStudents: statsRes.totalUsers?.toLocaleString() || '0',
-          totalResources: statsRes.totalResources?.toLocaleString() || '0',
-          campusLabs: statsRes.campusLabs || '12'
-        });
+        if (Array.isArray(imageRes) && imageRes.length > 0) {
+          setHeroImages(imageRes.map(img => {
+            if (!img.imageUrl) return null;
+            if (img.imageUrl.startsWith('http')) return img.imageUrl;
+            // Only prepend API_BASE_URL if it starts with /uploads or similar backend path
+            if (img.imageUrl.startsWith('/uploads')) return `${API_BASE_URL}${img.imageUrl}`;
+            return img.imageUrl;
+          }).filter(Boolean));
+        }
+
         setEquipment(equipRes.equipment || []);
         setLearning(learnRes.slice(0, 3) || []);
         setStories(storyRes.slice(0, 3) || []);
@@ -82,11 +79,25 @@ const Home = () => {
     };
 
     fetchHomeData();
+  }, []);
+
+  // Separate Timer for Slider
+  useEffect(() => {
+    if (heroImages.length <= 1) return;
+    
     const timer = setInterval(() => {
       setBgIndex((prev) => (prev + 1) % heroImages.length);
-    }, 3000);
+    }, 5000);
+    
     return () => clearInterval(timer);
-  }, []);
+  }, [heroImages.length]);
+
+  // Reset index if image list changes and becomes smaller
+  useEffect(() => {
+    if (bgIndex >= heroImages.length) {
+      setBgIndex(0);
+    }
+  }, [heroImages.length, bgIndex]);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans text-[#2c3e50] selection:bg-blue-100 italic-none">
@@ -99,7 +110,7 @@ const Home = () => {
               <Cpu size={22} />
             </div>
             <span className="text-xl font-black tracking-tighter text-[#1f4fa3]">
-              SMART<span className="text-[#60a5fa]">UNI</span>
+              RP-IPRC<span className="text-[#60a5fa]"> TUMBA</span>
             </span>
           </Link>
           
@@ -159,7 +170,7 @@ const Home = () => {
               className="absolute inset-0"
             >
               <img 
-                src={heroImages[bgIndex]} 
+                src={heroImages[bgIndex]?.startsWith('/') && !heroImages[bgIndex]?.startsWith('/images/') ? `${API_BASE_URL}${heroImages[bgIndex]}` : (heroImages[bgIndex] || "/images/tumba2.jpg")} 
                 alt="Lab Background" 
                 className="w-full h-full object-cover"
               />
@@ -181,8 +192,8 @@ const Home = () => {
             </div>
             
             <h1 className="text-4xl md:text-6xl lg:text-[5.5rem] font-black text-white leading-[1] tracking-tighter italic-none">
-              The Heart of <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-400">Engineering.</span>
+              Tumba College of <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-400">Technology.</span>
             </h1>
             
             <p className="text-lg md:text-xl text-slate-200 mb-12 leading-relaxed max-w-2xl mx-auto font-medium">
@@ -204,9 +215,12 @@ const Home = () => {
         <div className="absolute bottom-0 left-0 w-full overflow-hidden bg-white/5 backdrop-blur-sm border-t border-white/10 py-8">
            <div className="flex whitespace-nowrap animate-marquee">
               {[...heroImages, ...heroImages].map((img, i) => (
-                <div key={i} className="flex-none w-64 md:w-80 h-40 md:h-48 mx-4 rounded-2xl overflow-hidden border border-white/20 shadow-xl group">
-                   <img src={img} className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500" />
-                </div>
+                 <div key={i} className="flex-none w-64 md:w-80 h-40 md:h-48 mx-4 rounded-2xl overflow-hidden border border-white/20 shadow-xl group">
+                    <img 
+                      src={img?.startsWith('/') && !img?.startsWith('/images/') ? `${API_BASE_URL}${img}` : (img || "/images/tumba2.jpg")} 
+                      className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500" 
+                    />
+                 </div>
               ))}
            </div>
         </div>
@@ -223,15 +237,7 @@ const Home = () => {
         }
       `}} />
 
-      {/* DASHBOARD SUMMARY CARDS */}
-      <section className="px-6 max-w-7xl mx-auto py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-           <DashStatCard label="Total Equipment" value={dashStats.totalEquipment} icon={Package} color="blue" />
-           <DashStatCard label="Active Students" value={dashStats.activeStudents} icon={Users} color="indigo" />
-           <DashStatCard label="Resources" value={dashStats.totalResources} icon={BookOpen} color="emerald" />
-           <DashStatCard label="Campus Labs" value={dashStats.campusLabs} icon={Activity} color="cyan" />
-        </div>
-      </section>
+
 
       {/* SHAPE & GUIDE - COMPREHENSIVE PLATFORM INFO */}
       <section id="shape-guide" className="py-32 bg-white relative overflow-hidden">
@@ -422,14 +428,14 @@ const Home = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-white border-t border-slate-100 text-[#6b7280] py-24 px-6 relative overflow-hidden">
+      <footer id="footer" className="bg-white border-t border-slate-100 text-[#6b7280] py-24 px-6 relative overflow-hidden">
          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-16 mb-20">
             <div className="lg:col-span-1 space-y-6">
               <Link to="/" className="flex items-center gap-3 text-[#2c3e50] group">
                 <div className="w-12 h-12 bg-gradient-to-br from-[#1f4fa3] to-[#60a5fa] rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/10">
                   <Cpu size={24} />
                 </div>
-                <span className="text-3xl font-black tracking-tighter uppercase">SMART<span className="text-[#60a5fa]">UNI</span></span>
+                <span className="text-3xl font-black tracking-tighter uppercase">RP-IPRC<span className="text-[#60a5fa]"> TUMBA</span></span>
               </Link>
               <p className="text-sm font-medium leading-relaxed">
                 Empowering the next generation of engineers through advanced facility management and strategic resource allocation.
@@ -437,10 +443,30 @@ const Home = () => {
             </div>
             
             <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-10">
-              <FooterLinks title="Platform" links={['Management', 'Equipment', 'Learning Map', 'Cloud Sync']} />
-              <FooterLinks title="Faculty" links={['Mechatronics', 'Electronics', 'ICT Center', 'Renewable Lab']} />
-              <FooterLinks title="Navigation" links={['Shape & Guide', 'Login Portal', 'Student Card', 'Support']} />
-              <FooterLinks title="Company" links={['About Hub', 'Staff Portal', 'Privacy Desk', 'Guidelines']} />
+              <FooterLinks title="Platform" items={[
+                  { label: 'Management', to: '/login' },
+                  { label: 'Inventory', to: '#equipment' },
+                  { label: 'Learning Hub', to: '#learning' },
+                  { label: 'Incubation', to: '/public-incubation' }
+              ]} />
+              <FooterLinks title="RP-IPRC TUMBA" items={[
+                  { label: 'Mechatronics', to: '#equipment' },
+                  { label: 'Electronics', to: '#equipment' },
+                  { label: 'ICT Center', to: '#equipment' },
+                  { label: 'Renewable Lab', to: '#equipment' }
+              ]} />
+              <FooterLinks title="Quick Links" items={[
+                  { label: 'Shape & Guide', to: '#shape-guide' },
+                  { label: 'Login Portal', to: '/login' },
+                  { label: 'Apply Now', to: '/login' },
+                  { label: 'Public Stories', to: '/public-incubation' }
+              ]} />
+              <FooterLinks title="Support" items={[
+                  { label: 'General Help', to: '#shape-guide' },
+                  { label: 'Feedback', to: '#shape-guide' },
+                  { label: 'Contact Center', to: '#footer' },
+                  { label: 'System status', to: '/login' }
+              ]} />
             </div>
          </div>
          
@@ -471,31 +497,7 @@ const Home = () => {
 
 // COMPONENT HELPERS
 
-const DashStatCard = ({ label, value, icon: Icon, color }) => (
-  <motion.div 
-    whileHover={{ y: -5 }}
-    className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-slate-200/40 flex flex-col justify-between hover:shadow-blue-500/5 transition-all group border border-slate-50 overflow-hidden relative"
-  >
-     <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50/50 rounded-full blur-[60px] -mr-16 -mt-16 pointer-events-none group-hover:bg-blue-50/50 transition-colors" />
-     <div className="flex justify-between items-start mb-8 relative z-10">
-        <h3 className="text-5xl font-black text-[#2c3e50] tracking-tighter leading-none">{value}</h3>
-        <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center shadow-inner ${
-           color === 'blue' ? 'bg-blue-50 text-blue-600 shadow-blue-500/10' : 
-           color === 'indigo' ? 'bg-indigo-50 text-indigo-600 shadow-indigo-500/10' : 
-           color === 'emerald' ? 'bg-emerald-50 text-emerald-600 shadow-emerald-500/10' : 
-           'bg-cyan-50 text-cyan-600 shadow-cyan-500/10'
-        }`}>
-           <Icon size={32} />
-        </div>
-     </div>
-     <div className="relative z-10">
-        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#9ca3af] mb-4">{label}</p>
-        <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-auto">
-           <Activity size={14} className="animate-pulse" /> Live Status
-        </div>
-     </div>
-  </motion.div>
-);
+
 
 const GuideCard = ({ index, title, desc, icon: Icon, color }) => (
   <motion.div 
@@ -532,12 +534,18 @@ const SummaryFeature = ({ icon: Icon, title, desc }) => (
   </div>
 );
 
-const FooterLinks = ({ title, links }) => (
+const FooterLinks = ({ title, items }) => (
   <div>
     <h4 className="text-[#2c3e50] font-black text-sm uppercase tracking-widest mb-8 italic-none">{title}</h4>
     <ul className="space-y-4">
-      {links.map((l, i) => (
-        <li key={i}><a href="#" className="text-sm font-medium hover:text-[#1f4fa3] transition-colors italic-none">{l}</a></li>
+      {items.map((item, i) => (
+        <li key={i}>
+          {item.to.startsWith('#') ? (
+            <a href={item.to} className="text-sm font-medium hover:text-[#1f4fa3] transition-colors italic-none">{item.label}</a>
+          ) : (
+            <Link to={item.to} className="text-sm font-medium hover:text-[#1f4fa3] transition-colors italic-none">{item.label}</Link>
+          )}
+        </li>
       ))}
     </ul>
   </div>

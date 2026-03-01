@@ -24,9 +24,13 @@ import {
   MapPin,
   Info,
   Lightbulb,
+  Film,
+  Globe,
+  Play,
   Sparkles,
   AlertCircle
 } from 'lucide-react';
+import SuccessStoryDetailModal from '../../components/SuccessStoryDetailModal';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
 import React, { useState, useEffect } from 'react';
@@ -59,7 +63,8 @@ const ManageIncubation = () => {
 
   // Form State for Success Story
   const [storyForm, setStoryForm] = useState({
-     projectName: '', studentName: '', description: '', achievements: '', graduationYear: '', companyStatus: '', image: '', tags: ''
+     projectName: '', studentName: '', description: '', achievements: '', graduationYear: '', companyStatus: '', image: '', tags: '',
+     videoUrl: '', gallery: '', socialLinks: []
   });
 
   // Form State for Program/Event
@@ -158,19 +163,25 @@ const ManageIncubation = () => {
      setLoading(true);
      try {
        if (editingId) {
-          await axios.put(`${API_BASE_URL}/api/incubation/stories/${editingId}`, storyForm, {
+          await axios.put(`${API_BASE_URL}/api/incubation/stories/${editingId}`, {
+             ...storyForm,
+             socialLinks: JSON.stringify(storyForm.socialLinks)
+          }, {
               headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
           });
           alert('Success story updated!');
        } else {
-          await axios.post(`${API_BASE_URL}/api/incubation/stories`, storyForm, {
+        await axios.post(`${API_BASE_URL}/api/incubation/stories`, {
+             ...storyForm,
+             socialLinks: JSON.stringify(storyForm.socialLinks)
+          }, {
               headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
           });
           alert('Success story uploaded!');
        }
        setStoryModalOpen(false);
        setEditingId(null);
-       setStoryForm({ projectName: '', studentName: '', description: '', achievements: '', graduationYear: '', companyStatus: '', image: '', tags: '' });
+       setStoryForm({ projectName: '', studentName: '', description: '', achievements: '', graduationYear: '', companyStatus: '', image: '', tags: '', videoUrl: '', gallery: '', socialLinks: [] });
        fetchStories();
      } catch (error) {
        console.error(error);
@@ -189,7 +200,10 @@ const ManageIncubation = () => {
         graduationYear: story.graduationYear,
         companyStatus: story.companyStatus,
         image: story.image,
-        tags: story.tags
+        tags: story.tags,
+        videoUrl: story.videoUrl || '',
+        gallery: story.gallery || '',
+        socialLinks: story.socialLinks ? JSON.parse(story.socialLinks) : []
      });
      setEditingId(story.id);
      setStoryModalOpen(true);
@@ -215,12 +229,12 @@ const ManageIncubation = () => {
     setUploading(true);
     try {
       const res = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
-        headers: { 
+        headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (type === 'asset') {
          setAssetForm({ ...assetForm, image: res.data.url });
       } else if (type === 'story') {
@@ -228,11 +242,119 @@ const ManageIncubation = () => {
       } else if (type === 'program') {
          setProgramForm({ ...programForm, image: res.data.url });
       }
-      
+
       alert('Image uploaded successfully!');
     } catch (error) {
       console.error(error);
       alert('Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploading(true);
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      setStoryForm({ ...storyForm, videoUrl: res.data.url });
+      alert('Video uploaded successfully!');
+    } catch (error) {
+      console.error(error);
+      alert('Video upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleGalleryUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    setUploading(true);
+    let currentGallery = storyForm.gallery ? storyForm.gallery.split(',').map(s => s.trim()).filter(Boolean) : [];
+    
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
+          headers: { 
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        currentGallery.push(res.data.url);
+      }
+      setStoryForm({ ...storyForm, gallery: currentGallery.join(', ') });
+      alert(`${files.length} images added to gallery!`);
+    } catch (error) {
+      console.error(error);
+      alert('Some gallery uploads failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAssetGalleryUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    setUploading(true);
+    let currentGallery = [...assetForm.galleryImages];
+    
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
+          headers: { 
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        currentGallery.push(res.data.url);
+      }
+      setAssetForm({ ...assetForm, galleryImages: currentGallery });
+      alert(`${files.length} images added to asset gallery!`);
+    } catch (error) {
+      console.error(error);
+      alert('Gallery upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAssetVideoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploading(true);
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      setAssetForm({ ...assetForm, videoUrls: [...assetForm.videoUrls, res.data.url] });
+      alert('Video uploaded and added to asset!');
+    } catch (error) {
+      console.error(error);
+      alert('Video upload failed');
     } finally {
       setUploading(false);
     }
@@ -256,10 +378,10 @@ const ManageIncubation = () => {
       setAssetModalOpen(false);
       setEditingId(null);
       setAssetForm({
-        name: '', modelNumber: '', serialNumber: '', assetTag: '', category: 'Hardware', department: 'Incubation', 
-        type: 'Equipment', status: 'Available', description: '', location: '', stock: 1, available: 1, 
-        image: '', galleryImages: [], videoUrls: [], manualUrl: '', 
-        purchaseDate: '', warrantyExpiry: '', cost: '', supplier: '', 
+        name: '', modelNumber: '', serialNumber: '', assetTag: '', category: 'Hardware', department: 'Incubation',
+        type: 'Equipment', status: 'Available', description: '', location: '', stock: 1, available: 1,
+        image: '', galleryImages: [], videoUrls: [], manualUrl: '',
+        purchaseDate: '', warrantyExpiry: '', cost: '', supplier: '',
         requiresMaintenance: false, allowOvernight: false, icon: 'Package'
       });
       setAssetFormTab('basic');
@@ -273,7 +395,18 @@ const ManageIncubation = () => {
   };
 
   const handleEditAsset = (asset) => {
-    setAssetForm({ ...asset });
+    const parseIfString = (val) => {
+       if (typeof val === 'string') {
+          try { return JSON.parse(val); } catch(e) { return []; }
+       }
+       return Array.isArray(val) ? val : [];
+    };
+
+    setAssetForm({ 
+       ...asset,
+       galleryImages: parseIfString(asset.galleryImages),
+       videoUrls: parseIfString(asset.videoUrls)
+    });
     setEditingId(asset.id);
     setAssetModalOpen(true);
     setAssetFormTab('basic');
@@ -309,8 +442,8 @@ const ManageIncubation = () => {
       }
       setProgramModalOpen(false);
       setEditingId(null);
-      setProgramForm({ 
-        name: '', description: '', requirements: '', duration: '', applicationDeadline: '', 
+      setProgramForm({
+        name: '', description: '', requirements: '', duration: '', applicationDeadline: '',
         status: 'Active', benefits: '', type: 'Program', date: '', location: '', speaker: '', image: ''
       });
       fetchPrograms();
@@ -323,7 +456,7 @@ const ManageIncubation = () => {
   };
 
   const handleEditProgram = (prog) => {
-    setProgramForm({ 
+    setProgramForm({
       ...prog,
       applicationDeadline: prog.applicationDeadline ? prog.applicationDeadline.split('T')[0] : ''
     });
@@ -397,9 +530,9 @@ const ManageIncubation = () => {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <button 
+                              <button
                                 onClick={() => setViewingItem({...app, type: 'project'})}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" 
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
                                 title="View Proposal"
                               >
                                 <Eye size={18} />
@@ -416,7 +549,7 @@ const ManageIncubation = () => {
             </div>
           </div>
         );
-      
+
       case 'success':
         return (
           <div className="space-y-6">
@@ -425,7 +558,7 @@ const ManageIncubation = () => {
                   <h3 className="text-xl font-bold text-slate-800">Alumni Success Stories</h3>
                   <p className="text-slate-500 text-sm">Upload and showcase startup successes.</p>
                </div>
-               <button 
+               <button
                   onClick={() => setStoryModalOpen(true)}
                   className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"
                >
@@ -458,10 +591,10 @@ const ManageIncubation = () => {
                         </div>
 
                        <div className="h-48 overflow-hidden relative">
-                         <img 
-                           src={story.image || "https://images.unsplash.com/photo-1556761175-4b46a572b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"} 
+                         <img
+                           src={story.image || "https://images.unsplash.com/photo-1556761175-4b46a572b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"}
                            alt={story.projectName}
-                           className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                           className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                          />
                          <div className="absolute top-4 left-4 flex flex-wrap gap-2 pr-12">
                            {story.tags && story.tags.split(',').map((tag, idx) => (
@@ -479,7 +612,7 @@ const ManageIncubation = () => {
                              Class of {story.graduationYear}
                            </span>
                          </div>
-                         
+
                          <div className="text-xs text-slate-500 font-medium mb-4 flex items-center gap-1.5 border-b border-slate-50 pb-3">
                             <div className="w-5 h-5 rounded-full bg-slate-200 overflow-hidden"><img src={`https://ui-avatars.com/api/?name=${story.studentName}&background=0D8ABC&color=fff`} alt={story.studentName} /></div>
                             {story.studentName}
@@ -520,7 +653,7 @@ const ManageIncubation = () => {
                   <p className="text-slate-500 text-sm">Schedule accelerator programs and hackathons.</p>
                </div>
                 <div className="flex gap-2">
-                   <button 
+                   <button
                       onClick={() => {
                         setProgramForm({ ...programForm, type: 'Program' });
                         setProgramModalOpen(true);
@@ -529,7 +662,7 @@ const ManageIncubation = () => {
                    >
                      <Plus size={16} /> New Program
                    </button>
-                   <button 
+                   <button
                       onClick={() => {
                         setProgramForm({ ...programForm, type: 'Event' });
                         setProgramModalOpen(true);
@@ -572,7 +705,7 @@ const ManageIncubation = () => {
                          </div>
                          <h4 className="text-lg font-bold text-slate-800 mb-2">{prog.name}</h4>
                          <p className="text-sm text-slate-500 line-clamp-2 mb-4">{prog.description}</p>
-                         
+
                          <div className="space-y-2 pt-4 border-t border-slate-50">
                             {prog.type === 'Program' ? (
                                <div className="flex justify-between text-xs">
@@ -596,7 +729,7 @@ const ManageIncubation = () => {
             )}
           </div>
         );
-        
+
       case 'resources':
         return (
           <div className="space-y-6">
@@ -605,7 +738,7 @@ const ManageIncubation = () => {
                   <h3 className="text-xl font-bold text-slate-800">Center Store & Resources</h3>
                   <p className="text-slate-500 text-sm">Upload equipment, tech credits, and labs specifically for incubated startups.</p>
                </div>
-               <button 
+               <button
                   onClick={() => setAssetModalOpen(true)}
                   className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"
                >
@@ -642,11 +775,11 @@ const ManageIncubation = () => {
                                     {asset.status}
                                 </span>
                             </div>
-                            
+
                             {asset.image && (
                                 <img src={asset.image} alt={asset.name} className="w-full h-24 object-cover rounded-lg mb-3 border border-slate-100" />
                             )}
-                            
+
                             <h4 className="text-lg font-bold text-slate-800 mb-1">{asset.name}</h4>
                             <p className="text-sm text-slate-500 mb-4 line-clamp-2">{asset.description}</p>
                             <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -731,31 +864,31 @@ const ManageIncubation = () => {
     <div className="flex flex-col lg:flex-row gap-8">
       {/* Sidebar Navigation for Manager */}
       <div className="w-full lg:w-64 shrink-0 space-y-2">
-        <button 
+        <button
           onClick={() => setActiveTab('applications')}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${activeTab === 'applications' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-blue-200 hover:text-blue-600'}`}
         >
           <Users size={18} /> Startup Ideas
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('requests')}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${activeTab === 'requests' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-blue-200 hover:text-blue-600'}`}
         >
           <PackageSearch size={18} /> Asset Requests
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('success')}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${activeTab === 'success' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-blue-200 hover:text-blue-600'}`}
         >
           <Trophy size={18} /> Success Stories
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('programs')}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${activeTab === 'programs' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-blue-200 hover:text-blue-600'}`}
         >
           <Calendar size={18} /> Programs & Events
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('resources')}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${activeTab === 'resources' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-blue-200 hover:text-blue-600'}`}
         >
@@ -792,22 +925,162 @@ const ManageIncubation = () => {
                        </div>
                     </div>
 
-                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Image (URL or Local)</label>
-                           <div className="flex gap-2">
-                              <input type="url" placeholder="https://..." value={storyForm.image} onChange={(e) => setStoryForm({...storyForm, image: e.target.value})} className="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                              <label className="cursor-pointer px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition text-slate-600 flex items-center justify-center">
-                                 <Plus size={18} />
-                                 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'story')} />
-                              </label>
+                        <div className="space-y-6">
+                           <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                              <h3 className="text-sm font-bold text-slate-800 mb-4 pb-2 border-b border-slate-200 flex items-center gap-2">
+                                 <Image size={16} className="text-blue-500" /> Image & Gallery Management
+                              </h3>
+                              <div className="space-y-4">
+                                 <div>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Main Cover Image</label>
+                                    <div className="flex gap-2">
+                                       <input type="text" placeholder="https://..." value={storyForm.image} onChange={(e) => setStoryForm({...storyForm, image: e.target.value})} className="flex-1 p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                                       <label className="cursor-pointer px-4 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition border border-blue-100 flex items-center justify-center">
+                                          <UploadCloud size={20} />
+                                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'story')} />
+                                       </label>
+                                    </div>
+                                 </div>
+                                 <div>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Project Gallery (Multiple Images)</label>
+                                    <textarea 
+                                       placeholder="Paste multiple URLs separated by commas..." 
+                                       value={storyForm.gallery} 
+                                       onChange={(e) => setStoryForm({...storyForm, gallery: e.target.value})} 
+                                       className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm h-20 resize-none mb-2"
+                                    />
+                                    <label className="cursor-pointer w-full py-3 bg-white border border-dashed border-slate-300 rounded-lg hover:bg-slate-50 transition flex items-center justify-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-widest">
+                                       <Plus size={16} /> Upload Multiple Gallery Photos
+                                       <input type="file" multiple className="hidden" accept="image/*" onChange={handleGalleryUpload} />
+                                    </label>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                              <h3 className="text-sm font-bold text-slate-800 mb-4 pb-2 border-b border-slate-200 flex items-center gap-2">
+                                 <Film size={16} className="text-red-500" /> Video Presentation
+                              </h3>
+                              <div className="space-y-4">
+                                 <p className="text-[10px] text-slate-500 mb-2">Provide a YouTube URL or upload an MP4 directly from your computer.</p>
+                                 <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                       <Globe size={16} className="absolute left-3 top-3 text-slate-400" />
+                                       <input 
+                                          type="text" 
+                                          placeholder="https://youtube.com/watch?v=..." 
+                                          value={storyForm.videoUrl} 
+                                          onChange={(e) => setStoryForm({...storyForm, videoUrl: e.target.value})} 
+                                          className="w-full pl-10 p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-medium" 
+                                       />
+                                    </div>
+                                    <label className="cursor-pointer px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition border border-red-100 flex items-center justify-center gap-2">
+                                       <Film size={20} />
+                                       <input type="file" className="hidden" accept="video/mp4" onChange={handleVideoUpload} />
+                                    </label>
+                                 </div>
+                                 <div className="mt-6 border-t border-slate-200 pt-6">
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">External Platform Links (WhatsApp, Web, etc.)</label>
+                                    
+                                    <div className="space-y-3 mb-4">
+                                       {storyForm.socialLinks.map((link, idx) => (
+                                          <div key={idx} className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                             <select 
+                                                value={link.type} 
+                                                onChange={(e) => {
+                                                   const newLinks = [...storyForm.socialLinks];
+                                                   newLinks[idx].type = e.target.value;
+                                                   setStoryForm({...storyForm, socialLinks: newLinks});
+                                                }}
+                                                className="w-32 p-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
+                                             >
+                                                <option value="Website">Website</option>
+                                                <option value="WhatsApp">WhatsApp</option>
+                                                <option value="Facebook">Facebook</option>
+                                                <option value="LinkedIn">LinkedIn</option>
+                                                <option value="Twitter">Twitter</option>
+                                                <option value="Instagram">Instagram</option>
+                                             </select>
+                                             <div className="flex-1 relative">
+                                                <input 
+                                                   type="text" 
+                                                   placeholder={link.type === 'WhatsApp' ? "e.g. 078XXXXXXX or +250..." : "https://..."}
+                                                   value={link.url}
+                                                   onChange={(e) => {
+                                                      let val = e.target.value;
+                                                      // Auto-format WhatsApp numbers
+                                                      if (link.type === 'WhatsApp' && val && !val.startsWith('http') && !val.startsWith('wa.me')) {
+                                                         // Remove spaces and non-digits
+                                                         let clean = val.replace(/\D/g, '');
+                                                         if (clean.length === 9 || clean.length === 10) {
+                                                            if (clean.startsWith('0')) clean = clean.substring(1);
+                                                            val = `https://wa.me/250${clean}`;
+                                                         }
+                                                      }
+                                                      const newLinks = [...storyForm.socialLinks];
+                                                      newLinks[idx].url = val;
+                                                      setStoryForm({...storyForm, socialLinks: newLinks});
+                                                   }}
+                                                   className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm"
+                                                />
+                                                {link.type === 'WhatsApp' && link.url.includes('wa.me') && (
+                                                   <span className="absolute right-3 top-3 text-[9px] font-black text-emerald-500 uppercase tracking-tighter">Formatted!</span>
+                                                )}
+                                             </div>
+                                             <button 
+                                                type="button"
+                                                onClick={() => {
+                                                   const newLinks = storyForm.socialLinks.filter((_, i) => i !== idx);
+                                                   setStoryForm({...storyForm, socialLinks: newLinks});
+                                                }}
+                                                className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                             >
+                                                <Trash2 size={18} />
+                                             </button>
+                                          </div>
+                                       ))}
+                                    </div>
+
+                                    <button 
+                                       type="button"
+                                       onClick={() => setStoryForm({...storyForm, socialLinks: [...storyForm.socialLinks, { type: 'Website', url: '' }]})}
+                                       className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2"
+                                    >
+                                       <Plus size={16} /> Add Another Link
+                                    </button>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                             <h3 className="text-sm font-bold text-[#1f4fa3] mb-4 flex items-center gap-2">
+                                <Sparkles size={16} /> Achievements & Classification
+                             </h3>
+                             <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Graduation / Cohort Year</label>
+                                   <input type="text" placeholder="2026" value={storyForm.graduationYear} onChange={(e) => setStoryForm({...storyForm, graduationYear: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                                </div>
+                                <div>
+                                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Industrial Status</label>
+                                   <input type="text" placeholder="e.g. Series A, Operational" value={storyForm.companyStatus} onChange={(e) => setStoryForm({...storyForm, companyStatus: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                                </div>
+                             </div>
+                             <div className="mt-4">
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Category Tags</label>
+                                <input type="text" placeholder="FinTech, AI, Sustainability" value={storyForm.tags} onChange={(e) => setStoryForm({...storyForm, tags: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                             </div>
+                             <div className="mt-4">
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Key Milestones (Command Separated)</label>
+                                <textarea 
+                                   placeholder="Raised $1M, 50k Users, Patented IP..." 
+                                   value={storyForm.achievements} 
+                                   onChange={(e) => setStoryForm({...storyForm, achievements: e.target.value})} 
+                                   className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm h-20 resize-none"
+                                />
+                             </div>
                            </div>
                         </div>
-                        <div>
-                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Tags</label>
-                           <input type="text" placeholder="e.g. EdTech, AI, IoT" value={storyForm.tags} onChange={(e) => setStoryForm({...storyForm, tags: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                        </div>
-                     </div>
 
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Description</label>
@@ -1040,33 +1313,132 @@ const ManageIncubation = () => {
                        )}
 
                        {assetFormTab === 'media' && (
-                          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Featured Imaging</label>
-                                <div className="flex gap-4">
+                          <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                             {/* Main Image */}
+                             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                   <Image size={16} className="text-blue-500" /> Featured Asset Imaging
+                                </h3>
+                                <div className="flex gap-6">
                                    {assetForm.image ? (
                                       <div className="relative w-40 h-40 group">
                                          <img src={assetForm.image} alt="Preview" className="w-full h-full object-cover rounded-xl border border-slate-200" />
                                          <button 
+                                           type="button"
                                            onClick={() => setAssetForm({...assetForm, image: ''})}
-                                           className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg"
+                                           className="absolute -top-2 -right-2 p-1.5 bg-red-600 text-white rounded-full shadow-lg hover:scale-110 transition"
                                          >
-                                            <Trash2 size={14} />
+                                            <X size={14} />
                                          </button>
                                       </div>
                                    ) : (
-                                      <label className="w-40 h-40 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all text-slate-400">
+                                      <label className="w-40 h-40 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all text-slate-400">
                                          <UploadCloud size={32} />
-                                         <span className="text-xs font-bold">Upload Media</span>
-                                         <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                         <span className="text-[10px] font-black uppercase tracking-widest">Main Photo</span>
+                                         <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'asset')} />
                                       </label>
                                    )}
-                                   <div className="flex-1">
-                                      <label className="block text-xs font-bold text-slate-400 mb-1">Manual Content Link (PDF/URL)</label>
-                                      <input type="url" value={assetForm.manualUrl} onChange={(e) => setAssetForm({...assetForm, manualUrl: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="https://manuals.com/item.pdf" />
-                                      <label className="block text-xs font-bold text-slate-400 mb-1">External Direct Link</label>
-                                      <input type="url" value={assetForm.image} onChange={(e) => setAssetForm({...assetForm, image: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://images.com/photo.jpg" />
+                                   <div className="flex-1 space-y-4">
+                                      <div>
+                                         <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Direct Image URL</label>
+                                         <input 
+                                            type="url" 
+                                            value={assetForm.image} 
+                                            onChange={(e) => setAssetForm({...assetForm, image: e.target.value})} 
+                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" 
+                                            placeholder="https://images.com/photo.jpg" 
+                                         />
+                                      </div>
+                                      <div>
+                                         <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">User Manual / Documentation (URL)</label>
+                                         <input 
+                                            type="url" 
+                                            value={assetForm.manualUrl} 
+                                            onChange={(e) => setAssetForm({...assetForm, manualUrl: e.target.value})} 
+                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" 
+                                            placeholder="https://manuals.com/item.pdf" 
+                                         />
+                                      </div>
                                    </div>
+                                </div>
+                             </div>
+
+                             {/* Gallery Images */}
+                             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                   <Image size={16} className="text-emerald-500" /> Equipment Gallery
+                                </h3>
+                                <div className="grid grid-cols-4 gap-4 mb-4">
+                                   {assetForm.galleryImages.map((img, i) => (
+                                      <div key={i} className="relative aspect-square group">
+                                         <img src={img} className="w-full h-full object-cover rounded-xl border border-slate-200" />
+                                         <button 
+                                            type="button"
+                                            onClick={() => {
+                                               const newGallery = assetForm.galleryImages.filter((_, idx) => idx !== i);
+                                               setAssetForm({...assetForm, galleryImages: newGallery});
+                                            }}
+                                            className="absolute -top-2 -right-2 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg"
+                                         >
+                                            <X size={12} />
+                                         </button>
+                                      </div>
+                                   ))}
+                                   <label className="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-all text-slate-400">
+                                      <Plus size={20} />
+                                      <span className="text-[8px] font-black uppercase tracking-tighter">Add Photos</span>
+                                      <input type="file" multiple className="hidden" accept="image/*" onChange={handleAssetGalleryUpload} />
+                                   </label>
+                                </div>
+                             </div>
+
+                             {/* Video Resources */}
+                             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                   <Film size={16} className="text-red-500" /> Demo & Tutorial Videos
+                                </h3>
+                                <div className="space-y-3 mb-4">
+                                   {assetForm.videoUrls.map((vid, idx) => (
+                                      <div key={idx} className="flex gap-2">
+                                         <div className="flex-1 relative">
+                                            <Play size={14} className="absolute left-3 top-3.5 text-slate-400" />
+                                            <input 
+                                               type="text" 
+                                               value={vid} 
+                                               onChange={(e) => {
+                                                  const newVids = [...assetForm.videoUrls];
+                                                  newVids[idx] = e.target.value;
+                                                  setAssetForm({...assetForm, videoUrls: newVids});
+                                               }}
+                                               className="w-full pl-9 p-2.5 bg-white border border-slate-200 rounded-lg text-sm"
+                                               placeholder="YouTube URL or direct MP4 link"
+                                            />
+                                         </div>
+                                         <button 
+                                            type="button"
+                                            onClick={() => {
+                                               const newVids = assetForm.videoUrls.filter((_, i) => i !== idx);
+                                               setAssetForm({...assetForm, videoUrls: newVids});
+                                            }}
+                                            className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                         >
+                                            <Trash2 size={18} />
+                                         </button>
+                                      </div>
+                                   ))}
+                                </div>
+                                <div className="flex gap-2">
+                                   <button 
+                                      type="button"
+                                      onClick={() => setAssetForm({...assetForm, videoUrls: [...assetForm.videoUrls, '']})}
+                                      className="flex-1 py-2.5 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                                   >
+                                      <Plus size={14} /> Add Video URL
+                                   </button>
+                                   <label className="flex-1 py-2.5 bg-red-50 border border-red-100 text-red-600 rounded-xl cursor-pointer hover:bg-red-100 transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                      <UploadCloud size={14} /> Upload Local MP4
+                                      <input type="file" className="hidden" accept="video/mp4" onChange={handleAssetVideoUpload} />
+                                   </label>
                                 </div>
                                 {uploading && <p className="text-[10px] text-blue-500 mt-2 animate-pulse">Processing media upload...</p>}
                              </div>
@@ -1164,71 +1536,10 @@ const ManageIncubation = () => {
       {/* Story Detail View */}
       <AnimatePresence>
         {viewingItem && viewingItem.type === 'story' && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.95 }}
-               animate={{ opacity: 1, scale: 1 }}
-               exit={{ opacity: 0, scale: 0.95 }}
-               className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]"
-            >
-              <div className="relative h-64">
-                <img src={viewingItem.image || "https://images.unsplash.com/photo-1556761175-4b46a572b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"} className="w-full h-full object-cover" alt={viewingItem.projectName} />
-                <button onClick={() => setViewingItem(null)} className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition">
-                  <X size={20} />
-                </button>
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
-                  <h2 className="text-3xl font-bold text-white">{viewingItem.projectName}</h2>
-                  <p className="text-blue-300 font-semibold">Founder: {viewingItem.studentName}</p>
-                </div>
-              </div>
-              <div className="p-8 overflow-y-auto">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="md:col-span-2 space-y-6">
-                       <div>
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">The Journey</h4>
-                          <p className="text-slate-600 leading-relaxed text-sm">{viewingItem.description}</p>
-                       </div>
-                       <div>
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Key Achievements</h4>
-                          <div className="grid grid-cols-1 gap-2">
-                             {viewingItem.achievements && viewingItem.achievements.split(',').map((item, idx) => (
-                               <div key={idx} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                  <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                     <Check size={14} />
-                                  </div>
-                                  <span className="text-sm font-semibold text-slate-700">{item.trim()}</span>
-                               </div>
-                             ))}
-                          </div>
-                       </div>
-                    </div>
-                    <div className="space-y-6">
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Status Overview</h4>
-                          <div className="space-y-4">
-                             <div>
-                                <span className="block text-[10px] font-bold text-slate-400">Class</span>
-                                <span className="font-bold text-slate-700">{viewingItem.graduationYear}</span>
-                             </div>
-                             <div>
-                                <span className="block text-[10px] font-bold text-slate-400">Company Phase</span>
-                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">{viewingItem.companyStatus}</span>
-                             </div>
-                             <div>
-                                <span className="block text-[10px] font-bold text-slate-400">Industry Tags</span>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                   {viewingItem.tags && viewingItem.tags.split(',').map((tag, idx) => (
-                                     <span key={idx} className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] font-medium">{tag.trim()}</span>
-                                   ))}
-                                </div>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-            </motion.div>
-          </div>
+          <SuccessStoryDetailModal 
+            story={viewingItem} 
+            onClose={() => setViewingItem(null)} 
+          />
         )}
       </AnimatePresence>
 

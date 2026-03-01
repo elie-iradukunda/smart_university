@@ -1,49 +1,79 @@
 import { 
-  Package, CheckCircle, ArrowDownCircle, Users, PlayCircle, Clock, Activity, Loader2
+  Package, CheckCircle, ArrowDownCircle, Users, PlayCircle, Clock, Activity, Loader2, X
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useState, useEffect } from 'react';
 import API_BASE_URL from '../config/api';
 
-const StatCard = ({ label, value, icon: Icon, color }) => (
-  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between hover:-translate-y-1 transition-transform group">
-     <div className="flex justify-between items-start mb-4">
-        <div>
-           <h3 className="text-3xl font-bold text-slate-800 tracking-tight">{value}</h3>
-        </div>
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-           color === 'primary' ? 'bg-blue-50 text-blue-600' : 
-           color === 'info' ? 'bg-indigo-50 text-indigo-600' : 
-           color === 'warning' ? 'bg-amber-50 text-amber-600' : 
-           color === 'success' ? 'bg-emerald-50 text-emerald-600' :
-           color === 'danger' ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-600'
+const StatCard = ({ label, value, icon: Icon, color, trend }) => (
+  <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group cursor-default overflow-hidden relative">
+     <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-blue-50/50 transition-colors duration-500"></div>
+     <div className="flex justify-between items-start mb-6 relative z-10">
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-sm ${
+           color === 'primary' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 
+           color === 'info' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 
+           color === 'warning' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 
+           color === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+           color === 'danger' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-slate-50 text-slate-600 border border-slate-100'
         }`}>
-           <Icon size={24} />
+           <Icon size={28} strokeWidth={2.5} />
         </div>
+        {trend && (
+           <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black tracking-widest uppercase ${trend > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+              {trend > 0 ? '+' : ''}{trend}%
+           </div>
+        )}
      </div>
-     <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">{label}</p>
-     <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-bold uppercase tracking-wider mt-auto">
-        <Activity size={12} /> System Active
+     <div className="relative z-10">
+        <h3 className="text-4xl font-black text-slate-900 tracking-tighter mb-1">{value}</h3>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-slate-600 transition-colors">{label}</p>
      </div>
   </div>
 );
 
-const ActivityItem = ({ user, action, item, time, status }) => (
-  <div className="flex items-start gap-4 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors px-4 rounded-xl">
-    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0 uppercase shadow-sm">
-      {user?.charAt(0) || '?'}
-    </div>
-    <div className="flex-1 min-w-0">
-      <p className="text-sm text-slate-700 truncate">
-        <span className="font-bold text-slate-900">{user}</span>'s request for <span className="font-bold text-blue-600">{item}</span> is <span className="font-bold text-slate-800">{status}</span>
-      </p>
-      <div className="flex items-center gap-1.5 mt-1 text-[11px] font-medium text-slate-400">
-         <Clock size={12} />
-         <span>{new Date(time).toLocaleString()}</span>
+const ActivityItem = ({ user, action, item, time, status }) => {
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case 'Approved': return { color: 'emerald', icon: <CheckCircle size={14} /> };
+      case 'Borrowed': return { color: 'blue', icon: <Package size={14} /> };
+      case 'Returned': return { color: 'indigo', icon: <ArrowDownCircle size={14} /> };
+      case 'Cancelled': return { color: 'red', icon: <X size={14} /> };
+      case 'Pending': return { color: 'amber', icon: <Clock size={14} /> };
+      default: return { color: 'slate', icon: <Activity size={14} /> };
+    }
+  };
+
+  const config = getStatusConfig(status);
+
+  return (
+    <div className="group flex items-start gap-5 p-5 mb-2 rounded-2xl border border-transparent hover:border-slate-100 hover:bg-slate-50/50 hover:shadow-sm transition-all duration-300">
+      <div className={`shrink-0 w-12 h-12 rounded-xl bg-${config.color}-100 flex items-center justify-center text-${config.color}-600 font-black text-lg shadow-inner ring-4 ring-white`}>
+        {user?.charAt(0) || '?'}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+           <p className="text-sm font-bold text-slate-800 tracking-tight truncate">
+             {user} <span className="text-slate-400 font-medium lowercase mx-1">is</span> {status}
+           </p>
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+              {new Date(time).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+           </span>
+        </div>
+        <div className="flex items-center flex-wrap gap-2">
+           <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-${config.color}-50 border border-${config.color}-100 text-[10px] font-black uppercase tracking-widest text-${config.color}-600`}>
+              {config.icon} {status}
+           </div>
+           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <Package size={12} className="text-slate-400" /> {item}
+           </div>
+           <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400 ml-auto">
+              <Clock size={12} className="opacity-50" /> {new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+           </div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -98,16 +128,16 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {isAdminOrHod ? (
            <>
-              <StatCard label="Total Inventory" value={stats?.totalEquipment || 0} icon={Package} color="info" />
-              <StatCard label="Available Items" value={stats?.availableNow || 0} icon={CheckCircle} color="success" />
-              <StatCard label="Active Loans" value={stats?.activeLoans || 0} icon={Activity} color="warning" />
-              <StatCard label="Registered Users" value={stats?.totalUsers || 0} icon={Users} color="primary" />
+              <StatCard label="Total Inventory" value={stats?.totalEquipment || 0} icon={Package} color="info" trend={1.2} />
+              <StatCard label="Available Items" value={stats?.availableNow || 0} icon={CheckCircle} color="success" trend={2.4} />
+              <StatCard label="Active Loans" value={stats?.activeLoans || 0} icon={Activity} color="warning" trend={-0.8} />
+              <StatCard label="Registered Users" value={stats?.totalUsers || 0} icon={Users} color="primary" trend={5.1} />
            </>
         ) : (
            <>
-              <StatCard label="Active Loans" value={stats?.myBorrowedItems || 0} icon={Package} color="primary" />
-              <StatCard label="Pending Requests" value={stats?.pendingRequests || 0} icon={Clock} color="warning" />
-              <StatCard label="Overdue Items" value={stats?.overdueItems || 0} icon={ArrowDownCircle} color="danger" />
+              <StatCard label="Active Loans" value={stats?.myBorrowedItems || 0} icon={Package} color="primary" trend={0} />
+              <StatCard label="Pending Requests" value={stats?.pendingRequests || 0} icon={Clock} color="warning" trend={15} />
+              <StatCard label="Overdue Items" value={stats?.overdueItems || 0} icon={ArrowDownCircle} color="danger" trend={-10} />
               <StatCard label="Training Access" value="Full" icon={PlayCircle} color="success" />
            </>
         )}
@@ -115,28 +145,36 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Content Area */}
-        <div className="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col min-h-[400px]">
-           <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-800">
-                 {isAdminOrHod ? "Recent Activity Log" : "My Recent Activity"}
-              </h3>
-              <button className="text-blue-600 text-xs font-bold hover:underline transition-colors uppercase tracking-wider">View All History</button>
+        <div className="lg:col-span-8 bg-white rounded-[2rem] shadow-sm border border-slate-100 flex flex-col min-h-[400px]">
+           <div className="px-8 py-7 border-b border-slate-100 flex items-center justify-between bg-slate-50/30 rounded-t-[2rem]">
+              <div>
+                 <h3 className="text-lg font-black text-slate-800 tracking-tight">
+                    {isAdminOrHod ? "Recent Activity Log" : "My Recent Activity"}
+                 </h3>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Live system interactions</p>
+              </div>
+              <button className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-[10px] font-black hover:bg-slate-50 transition-all uppercase tracking-widest rounded-xl shadow-sm">View All History</button>
            </div>
            
            <div className="p-4 flex-1 overflow-y-auto custom-scrollbar">
               {isAdminOrHod ? (
                  stats?.recentActivity?.length > 0 ? (
-                    stats.recentActivity.map((act) => (
-                       <ActivityItem 
-                          key={act.id}
-                          user={act.User?.name}
-                          item={act.Equipment?.name}
-                          status={act.status}
-                          time={act.updatedAt}
-                       />
-                    ))
+                    <div className="space-y-1">
+                       {stats.recentActivity.map((act) => (
+                          <ActivityItem 
+                             key={act.id}
+                             user={act.User?.fullName}
+                             item={act.Equipment?.name}
+                             status={act.status}
+                             time={act.updatedAt}
+                          />
+                       ))}
+                    </div>
                  ) : (
-                    <p className="text-center text-slate-400 py-12 text-sm italic font-medium">No recent activity found.</p>
+                    <div className="py-20 flex flex-col items-center justify-center opacity-40">
+                       <Activity size={40} className="mb-4 text-slate-400" />
+                       <p className="text-xs font-black uppercase tracking-widest italic-none">Silence in the system</p>
+                    </div>
                  )
               ) : (
                  <div className="overflow-x-auto rounded-xl border border-slate-100">

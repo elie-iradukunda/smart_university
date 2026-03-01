@@ -38,6 +38,18 @@ const SuccessStory = sequelize.define('SuccessStory', {
   tags: {
     type: DataTypes.TEXT,
     allowNull: true,
+  },
+  videoUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  gallery: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  socialLinks: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   }
 }, {
   timestamps: true,

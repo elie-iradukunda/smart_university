@@ -73,20 +73,22 @@ exports.updateEquipment = async (req, res) => {
       return res.status(404).json({ message: 'Equipment not found' });
     }
 
-    // Protection: Non-admins can't update items from other departments
-    if (req.user.role !== 'Admin' && equipment.department !== req.user.department) {
+    // Protection: Non-admins/non-stockmanagers can't update items from other departments
+    const isGlobalRole = ['Admin', 'StockManager'].includes(req.user.role);
+    if (!isGlobalRole && equipment.department && req.user.department && equipment.department !== req.user.department) {
       return res.status(403).json({ message: 'Unauthorized: You can only manage equipment in your department' });
     }
 
     const equipmentData = { ...req.body };
-    // Prevent non-admins from moving items to other departments
-    if (req.user.role !== 'Admin' && req.user.department) {
-      equipmentData.department = req.user.department;
+    // Prevent non-admins/non-stockmanagers from moving items to other departments
+    if (!isGlobalRole && req.user.department) {
+      equipmentData.department = equipment.department || req.user.department;
     }
 
     await equipment.update(equipmentData);
     res.json(equipment);
   } catch (error) {
+    console.error('Equipment update error:', error);
     res.status(500).json({ message: 'Update failed', error: error.message });
   }
 };
@@ -112,4 +114,28 @@ exports.deleteEquipment = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Delete failed', error: error.message });
   }
+};
+
+// Verify equipment (Lab Staff)
+exports.verifyEquipment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const equipment = await Equipment.findByPk(id);
+
+        if (!equipment) return res.status(404).json({ message: 'Equipment not found' });
+        
+        // Protection: Lab Staff only verifies their own department's items
+        if (req.user.role !== 'Admin' && req.user.department !== equipment.department) {
+            return res.status(403).json({ message: 'Unauthorized: You can only verify equipment in your department' });
+        }
+
+        equipment.status = 'Available';
+        // We assume when they verify it, the stock becomes fully available
+        equipment.available = equipment.stock; 
+        await equipment.save();
+
+        res.json(equipment);
+    } catch (error) {
+        res.status(500).json({ message: 'Verification failed', error: error.message });
+    }
 };

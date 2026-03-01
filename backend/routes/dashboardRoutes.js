@@ -13,5 +13,6 @@ router.get('/stats', (req, res, next) => {
 }, dashboardController.getStats);
 
 router.get('/reports', auth, dashboardController.getReports);
+router.get('/export-excel', auth, dashboardController.exportExcelReport);
 
 module.exports = router;

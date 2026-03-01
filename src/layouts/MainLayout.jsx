@@ -15,7 +15,9 @@ import {
   ChevronDown,
   Rocket,
   Menu,
-  X
+  ClipboardList,
+  X,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -62,6 +64,7 @@ const MainLayout = () => {
   const allMenuItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['All'] },
     { to: '/equipment', icon: Package, label: 'Equipment', roles: ['Admin', 'HOD', 'StockManager', 'Appointed Staff', 'Lab Staff'] },
+    { to: '/requests', icon: ClipboardList, label: 'Equipment Requests', roles: ['Admin', 'HOD', 'StockManager'] },
     { to: '/borrow', icon: HandHelping, label: 'Borrow Equipment', roles: ['Student', 'Lecturer', 'Admin', 'Staff'] },
     { to: '/my-items', icon: ShoppingBag, label: 'My Items', roles: ['All'] },
     { to: '/reservations', icon: CalendarCheck, label: 'Reservations', roles: ['Admin', 'HOD', 'StockManager', 'Lab Staff'] },
@@ -69,6 +72,7 @@ const MainLayout = () => {
     { to: '/incubation', icon: Rocket, label: 'Incubation Center', roles: ['All'] },
     { to: '/reports', icon: BarChart3, label: 'Reports', roles: ['Admin', 'HOD'] },
     { to: '/users', icon: Users, label: 'Users', roles: ['Admin', 'HOD'] },
+    { to: '/home-manager', icon: ImageIcon, label: 'Home Images', roles: ['Admin'] },
     { to: '/settings', icon: Settings, label: 'Settings', roles: ['All'] },
   ];
 

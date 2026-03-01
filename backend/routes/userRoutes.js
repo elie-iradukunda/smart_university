@@ -5,6 +5,8 @@ const { auth, authorize } = require('../middleware/authMiddleware');
 
 // All user management routes are protected: Admin only
 router.get('/', auth, authorize(['Admin']), userController.getAllUsers);
+// Lab Staff lookup - accessible by HOD and Admin for assignment
+router.get('/lab-staff', auth, authorize(['Admin', 'HOD']), userController.getLabStaff);
 router.post('/', auth, authorize(['Admin']), userController.createUser);
 router.put('/:id', auth, authorize(['Admin']), userController.updateUser);
 router.delete('/:id', auth, authorize(['Admin']), userController.deleteUser);

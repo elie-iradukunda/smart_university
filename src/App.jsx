@@ -14,6 +14,8 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import PublicIncubation from './pages/PublicIncubation';
 import IncubationDashboard from './pages/incubation/IncubationDashboard';
+import EquipmentRequests from './pages/EquipmentRequests';
+import HomeManager from './pages/HomeManager';
 
 // Mock Auth - In a real app this would come from a Context/Store
 const getUserRole = () => {
@@ -91,7 +93,14 @@ function App() {
                        <Equipment />
                    </ProtectedRoute>
                } />
-               
+
+               {/* Equipment Requests */}
+               <Route path="requests" element={
+                   <ProtectedRoute allowedRoles={['Admin', 'HOD', 'StockManager']}>
+                       <EquipmentRequests />
+                   </ProtectedRoute>
+               } />
+
                {/* Borrowing: Students and Lecturers borrow items */}
                <Route path="borrow" element={
                    <ProtectedRoute allowedRoles={['Student', 'Lecturer', 'Admin', 'Staff']}>
@@ -117,6 +126,11 @@ function App() {
                <Route path="users" element={
                    <ProtectedRoute allowedRoles={['Admin', 'HOD']}>
                        <Users />
+                   </ProtectedRoute>
+               } />
+               <Route path="home-manager" element={
+                   <ProtectedRoute allowedRoles={['Admin']}>
+                       <HomeManager />
                    </ProtectedRoute>
                } />
             </Route>

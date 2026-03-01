@@ -60,7 +60,7 @@ const Equipment = sequelize.define('Equipment', {
     defaultValue: false,
   },
   status: {
-    type: DataTypes.ENUM('Available', 'In Use', 'Maintenance', 'Lost'),
+    type: DataTypes.STRING,
     defaultValue: 'Available',
   },
   location: {

@@ -14,6 +14,24 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// Get Lab Staff users, optionally filtered by department (HOD + Admin)
+exports.getLabStaff = async (req, res) => {
+  try {
+    const { department } = req.query;
+    const whereClause = { role: 'Lab Staff', status: 'Active' };
+    if (department) whereClause.department = department;
+
+    const labStaff = await User.findAll({
+      where: whereClause,
+      attributes: ['id', 'fullName', 'email', 'department', 'avatar'],
+      order: [['fullName', 'ASC']]
+    });
+    res.json(labStaff);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching lab staff', error: error.message });
+  }
+};
+
 // Create a new user (Admin only)
 exports.createUser = async (req, res) => {
   try {

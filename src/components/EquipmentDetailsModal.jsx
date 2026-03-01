@@ -95,7 +95,7 @@ const EquipmentDetailsModal = ({ isOpen, onClose, equipment, readOnly = false })
                       <div className="aspect-video bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex items-center justify-center relative group">
                           {images.length > 0 ? (
                               <img 
-                                src={images[activeImage]} 
+                                src={images[activeImage].startsWith('http') ? images[activeImage] : `${API_BASE_URL}${images[activeImage]}`} 
                                 alt={equipment.name} 
                                 className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" 
                               />
@@ -124,7 +124,10 @@ const EquipmentDetailsModal = ({ isOpen, onClose, equipment, readOnly = false })
                                     onClick={() => setActiveImage(idx)}
                                     className={`w-20 h-16 shrink-0 rounded-md border-2 overflow-hidden bg-white transition-all ${activeImage === idx ? 'border-[#1f4fa3] ring-2 ring-[#1f4fa3]/20' : 'border-transparent hover:border-gray-300'}`}
                                   >
-                                      <img src={img} className="w-full h-full object-cover" />
+                                      <img 
+                                        src={img.startsWith('http') ? img : `${API_BASE_URL}${img}`} 
+                                        className="w-full h-full object-cover" 
+                                      />
                                   </button>
                               ))}
                           </div>
@@ -137,17 +140,24 @@ const EquipmentDetailsModal = ({ isOpen, onClose, equipment, readOnly = false })
                                   <Play size={16} className="text-[#1f4fa3]" /> Training Resources & Tutorials
                               </h3>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  {videos.map((vid, idx) => {
+                                  {videos.filter(v => v).map((vid, idx) => {
                                       const embedUrl = getYoutubeEmbedUrl(vid);
-                                      if (!embedUrl) return null;
                                       return (
                                           <div key={idx} className="aspect-video rounded-lg overflow-hidden shadow-sm border border-gray-200 bg-black relative group">
-                                              <iframe 
-                                                  src={embedUrl}
-                                                  className="w-full h-full" 
-                                                  allowFullScreen 
-                                                  title={`Video ${idx}`}
-                                              />
+                                              {embedUrl ? (
+                                                  <iframe 
+                                                      src={embedUrl}
+                                                      className="w-full h-full" 
+                                                      allowFullScreen 
+                                                      title={`Video ${idx}`}
+                                                  />
+                                              ) : (
+                                                  <video 
+                                                    src={vid.startsWith('http') ? vid : `${API_BASE_URL}${vid}`} 
+                                                    controls 
+                                                    className="w-full h-full"
+                                                  />
+                                              )}
                                           </div>
                                       );
                                   })}

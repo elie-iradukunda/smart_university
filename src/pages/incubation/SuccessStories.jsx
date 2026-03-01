@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Star, TrendingUp, Award, Activity } from 'lucide-react';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import SuccessStoryDetailModal from '../../components/SuccessStoryDetailModal';
+import { AnimatePresence } from 'framer-motion';
 
 const SuccessStories = () => {
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedStory, setSelectedStory] = useState(null);
 
   useEffect(() => {
      const fetchStories = async () => {
@@ -47,7 +50,11 @@ const SuccessStories = () => {
       {/* Stories Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
         {stories.map(story => (
-          <div key={story.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+          <div 
+            key={story.id} 
+            onClick={() => setSelectedStory(story)}
+            className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer group"
+          >
             {/* Image Container */}
             <div className="h-60 overflow-hidden relative group">
               <img 
@@ -110,6 +117,14 @@ const SuccessStories = () => {
           </div>
         ))}
       </div>
+      <AnimatePresence>
+        {selectedStory && (
+          <SuccessStoryDetailModal 
+            story={selectedStory} 
+            onClose={() => setSelectedStory(null)} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
