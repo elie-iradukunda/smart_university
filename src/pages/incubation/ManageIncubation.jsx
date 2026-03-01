@@ -1054,57 +1054,42 @@ const ManageIncubation = () => {
 
                            <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
                              <h3 className="text-sm font-bold text-[#1f4fa3] mb-4 flex items-center gap-2">
-                                <Sparkles size={16} /> Achievements & Classification
+                                <Sparkles size={16} /> Story Details & Achievements
                              </h3>
-                             <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-4">
                                 <div>
-                                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Graduation / Cohort Year</label>
-                                   <input type="text" placeholder="2026" value={storyForm.graduationYear} onChange={(e) => setStoryForm({...storyForm, graduationYear: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Detailed Narrative / Description</label>
+                                   <textarea required rows="4" value={storyForm.description} onChange={(e) => setStoryForm({...storyForm, description: e.target.value})} className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none" placeholder="Provide a detailed story of the startup's journey..."></textarea>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                   <div>
+                                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Graduation / Cohort Year</label>
+                                      <input type="text" placeholder="2026" value={storyForm.graduationYear} onChange={(e) => setStoryForm({...storyForm, graduationYear: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                                   </div>
+                                   <div>
+                                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Industrial Status</label>
+                                      <input type="text" placeholder="e.g. Series A, Operational" value={storyForm.companyStatus} onChange={(e) => setStoryForm({...storyForm, companyStatus: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                                   </div>
                                 </div>
                                 <div>
-                                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Industrial Status</label>
-                                   <input type="text" placeholder="e.g. Series A, Operational" value={storyForm.companyStatus} onChange={(e) => setStoryForm({...storyForm, companyStatus: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Category Tags</label>
+                                   <input type="text" placeholder="FinTech, AI, Sustainability" value={storyForm.tags} onChange={(e) => setStoryForm({...storyForm, tags: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
                                 </div>
-                             </div>
-                             <div className="mt-4">
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Category Tags</label>
-                                <input type="text" placeholder="FinTech, AI, Sustainability" value={storyForm.tags} onChange={(e) => setStoryForm({...storyForm, tags: e.target.value})} className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
-                             </div>
-                             <div className="mt-4">
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Key Milestones (Command Separated)</label>
-                                <textarea 
-                                   placeholder="Raised $1M, 50k Users, Patented IP..." 
-                                   value={storyForm.achievements} 
-                                   onChange={(e) => setStoryForm({...storyForm, achievements: e.target.value})} 
-                                   className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm h-20 resize-none"
-                                />
+                                <div>
+                                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Key Milestones (Command Separated)</label>
+                                   <textarea 
+                                      placeholder="Raised $1M, 50k Users, Patented IP..." 
+                                      value={storyForm.achievements} 
+                                      onChange={(e) => setStoryForm({...storyForm, achievements: e.target.value})} 
+                                      className="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm h-20 resize-none"
+                                   />
+                                </div>
                              </div>
                            </div>
                         </div>
 
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Description</label>
-                        <textarea required rows="3" value={storyForm.description} onChange={(e) => setStoryForm({...storyForm, description: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                       <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Graduation Year</label>
-                          <input type="text" value={storyForm.graduationYear} onChange={(e) => setStoryForm({...storyForm, graduationYear: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                       </div>
-                       <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Current Company Status</label>
-                          <input type="text" placeholder="e.g. Scaling rapidly, Series A" value={storyForm.companyStatus} onChange={(e) => setStoryForm({...storyForm, companyStatus: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                       </div>
-                    </div>
-
-                    <div>
-                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Key Achievements</label>
-                       <input type="text" placeholder="Separate by commas (e.g. $50k Seed, Patented Tech)" value={storyForm.achievements} onChange={(e) => setStoryForm({...storyForm, achievements: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-
-                 </form>
-              </div>
+                  </form>
+               </div>
 
               <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
                  <button onClick={() => { setStoryModalOpen(false); setEditingId(null); }} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-100">Cancel</button>
